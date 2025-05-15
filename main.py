@@ -173,6 +173,7 @@ try:
             tuple_icons = get_icons(get_temp(), get_brightness(), get_volume(), get_battery())
             
             live.update(Panel(f"""
+{" "*12}{" "*12}
    {get_time()[0]}
    {get_time()[1]}
 {tuple_icons[0]}   {get_temp()}
