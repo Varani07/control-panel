@@ -1,0 +1,11 @@
+name: control_panel_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11.11
+  - python-dotenv
+  - psutil
+  - dbus-next
+  - pip:
+    - mysql-connector-python
+    - rich
