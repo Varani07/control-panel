@@ -33,7 +33,10 @@ class Interface():
         self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "NewsBoat", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
 
         self.livro_help = Livro("Help")
-        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "< | Pagina Anterior", "> | Proxima Pagina", "q | Sair"])
+        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair"])
+
+        self.livro_desligar = Livro("Desligar")
+        self.livro_desligar.adicionar_conteudo(["Screen Lock", "Suspender", "Reboot", "Desligar"])
 
     def monitoramento_tela_principal(self):
         fd = sys.stdin.fileno()
@@ -80,6 +83,8 @@ class Interface():
                         self.comandos_terminal_programas(key)
                     elif self.nome_painel_atual == "Help":
                         self.comandos_help(key)
+                    elif self.nome_painel_atual == "Desligar":
+                        self.comandos_desligar(key)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
             os.system("clear")
@@ -98,6 +103,9 @@ class Interface():
             return True
         elif key == "t":
             self.painel_atual = self.info_terminal
+            return True
+        elif key == "d":
+            self.painel_atual = self.info_desligar
             return True
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -333,5 +341,43 @@ class Interface():
             if self.livro_programas.numero_itens > num_key > -1:
                 self.info_terminal_programas = self.livro_programas.itens_pagina[num_key]
                 self.painel_atual = self.info_terminal
+        except:
+            pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def info_desligar(self):
+        self.nome_painel_atual = "Desligar"
+        opcoes = []
+        espacos = "\n" * (9 - self.livro_desligar.numero_itens)
+        opcoes = [f"{i} | {opcao}\n" for i, opcao in enumerate(self.livro_desligar.itens_pagina, 1)]
+        opcoes[-1] = opcoes[-1].replace("\n", "")
+        opcoes = "".join(opcoes)
+        painel = Panel(f"""{self.logo}
+{opcoes}{espacos}                       """)
+        return painel
+
+    def comandos_desligar(self, key):
+        if key == "<":
+            self.livro_desligar.pagina_anterior
+        elif key == ">":
+            self.livro_desligar.proxima_pagina
+
+        try:
+            num_key = int(key) - 1
+            if self.livro_desligar.numero_itens > num_key > -1:
+                escolha = self.livro_desligar.itens_pagina[num_key]
+                commands = []
+
+                if escolha == "Reboot":
+                    commands.append("systemctl reboot")
+                elif escolha == "Desligar":
+                    commands.append("systemctl poweroff")
+                elif escolha == "Suspender":
+                    commands.append("systemctl suspend")
+                elif escolha == "Screen Lock":
+                    commands.append("swaylock -i ~/meu_universo/Fotos/Wallpapers/anime_girl.jpg")
+                    
+                terminal_interactions.open_kitty_with_commands("~", commands)
         except:
             pass
