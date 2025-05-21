@@ -16,15 +16,24 @@ class Interface():
     def __init__(self):
         self.nome_painel_atual = ""
         self.painel_atual = self.info_principal
-        self.comandos_interfaces = {"r": "Conexoes", "p": "Processos", "m": "Menu Principal", "d": "Abrir Diretorio", "q": "Sair"}
-        self.info_diretorios_projetos = ""
-        self.info_diretorios_conda_env = ""
+
+        self.info_terminal_projetos = ""
+        self.info_terminal_conda_env = ""
+        self.info_terminal_programas = ""
+
         self.logo = " "*12 + ""
-        self.key = ""
+
         self.livro_projetos = Livro("Projetos")
         self.livro_projetos.adicionar_conteudo(["control-panel", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles"]) 
-        self.livro_envs = ["control_panel_env", "ponto_ecosocial_env", "usina_env"]
-        self.livro_processos = Livro("Processos")
+
+        self.livro_envs = Livro("Environment")
+        self.livro_envs.adicionar_conteudo(["control_panel_env", "ponto_ecosocial_env", "usina_env"])
+
+        self.livro_programas = Livro("Programas")
+        self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "NewsBoat", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
+
+        self.livro_help = Livro("Help")
+        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "< | Pagina Anterior", "> | Proxima Pagina", "q | Sair"])
 
     def monitoramento_tela_principal(self):
         fd = sys.stdin.fileno()
@@ -38,74 +47,77 @@ class Interface():
                     live.update(self.painel_atual())
                     key = computer_info.pegar_chave()
                     self.key = key
-                    try:
-                        if key == "q":
-                            break
 
-                        elif key == "?":
-                            if self.nome_painel_atual == "Menu Principal":
-                                self.painel_atual = self.atalhos_principal
-                            elif self.nome_painel_atual == "Conexoes":
-                                self.painel_atual = self.atalhos_conexoes
-                            elif self.nome_painel_atual == "Processos":
-                                self.painel_atual = self.atalhos_processos
-                            elif self.nome_painel_atual == "Diretorios":
-                                self.painel_atual = self.atalhos_diretorios
-                            elif self.nome_painel_atual == "Diretorios: projetos":
-                                self.painel_atual = self.atalhos_diretorios_projetos
-                            elif self.nome_painel_atual == "Diretorios: conda env":
-                                self.painel_atual = self.atalhos_diretorios_conda_env
+                    time.sleep(0.3)
 
-                            elif self.nome_painel_atual == "Help Menu":
-                                self.painel_atual = self.info_principal
-                            elif self.nome_painel_atual == "Help Conexoes":
-                                self.painel_atual = self.info_conexoes
-                            elif self.nome_painel_atual == "Help Processos":
-                                self.painel_atual = self.info_processos
-                            elif self.nome_painel_atual == "Help Diretorios":
-                                self.painel_atual = self.info_diretorios
-                            elif self.nome_painel_atual == "Help Diretorios: projetos":
-                                self.painel_atual = self.projetos
-                            elif self.nome_painel_atual == "Help Diretorios: conda env":
-                                self.painel_atual = self.conda_env
+                    if key == None:
+                        continue
 
-                        elif self.nome_painel_atual == "Conexoes":
-                            self.comandos_conexoes(key)
-                        elif self.nome_painel_atual == "Menu Principal":
-                            self.comandos_menu_principal(key)
-                        elif self.nome_painel_atual == "Diretorios":
-                            self.comandos_diretorios(key)
-                        elif self.nome_painel_atual == "Processos":
-                            self.comandos_processos(key)
-                        elif self.nome_painel_atual == "Diretorios: projetos":
-                            self.comandos_diretorios_projetos(key)
-                        elif self.nome_painel_atual == "Diretorios: conda env":
-                            self.comandos_diretorios_conda_env(key)
+                    if self.comandos_comuns(key):
+                        continue
+                     
+                    if key == "q":
+                        break
 
-                    except TypeError:
-                        pass
-                    time.sleep(1)
+                    elif key == "?":
+                        if self.nome_painel_atual != "Help":
+                            self.painel_atual = self.help
+
+                        
+                    elif self.nome_painel_atual == "Conexoes":
+                        self.comandos_conexoes(key)
+                    elif self.nome_painel_atual == "Menu Principal":
+                        self.comandos_menu_principal(key)
+                    elif self.nome_painel_atual == "Terminal":
+                        self.comandos_terminal(key)
+                    elif self.nome_painel_atual == "Processos":
+                        self.comandos_processos(key)
+                    elif self.nome_painel_atual == "Terminal: projetos":
+                        self.comandos_terminal_projetos(key)
+                    elif self.nome_painel_atual == "Terminal: conda env":
+                        self.comandos_terminal_conda_env(key)
+                    elif self.nome_painel_atual == "Terminal: programas":
+                        self.comandos_terminal_programas(key)
+                    elif self.nome_painel_atual == "Help":
+                        self.comandos_help(key)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
             os.system("clear")
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    def atalhos_personalizados(self, atalho_excluido):
-        atalhos = [f"{chave} - {valor}" + "\n" for chave, valor in self.comandos_interfaces.items() if chave is not atalho_excluido]
-        atalhos[-1] = atalhos[-1].replace("\n", "")
-        atalhos = "".join(atalhos)
-        return atalhos
-
-    def comandos_comuns(self, key, painel_excluido):
-        if key == "m" and painel_excluido != "m":
+    def comandos_comuns(self, key):
+        if key == "m":
             self.painel_atual = self.info_principal
-        elif key == "r" and painel_excluido != "r":
+            return True
+        elif key == "r":
             self.painel_atual = self.info_conexoes
-        elif key == "p" and painel_excluido != "p":
+            return True
+        elif key == "p":
             self.painel_atual = self.info_processos
-        elif key == "d" and painel_excluido != "d":
-            self.painel_atual = self.info_diretorios
+            return True
+        elif key == "t":
+            self.painel_atual = self.info_terminal
+            return True
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def help(self):
+        self.nome_painel_atual = "Help"
+        espacos = "\n" * (9 - self.livro_help.numero_itens)
+        comandos = []
+        comandos = [f"{comando:.27}" + "\n" for comando in self.livro_help.itens_pagina]
+        comandos[-1] = comandos[-1].replace("\n", "")
+        comandos = "".join(comandos)
+        help_panel = Panel(f"""{self.logo}
+{comandos}{espacos}                           """)
+        return help_panel
+
+    def comandos_help(self, key):
+        if key == "<":
+            self.livro_help.pagina_anterior
+        elif key == ">":
+            self.livro_help.proxima_pagina
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -131,17 +143,8 @@ class Interface():
 
         return painel_principal
 
-    def atalhos_principal(self):
-        self.nome_painel_atual = "Help Menu"
-        atalhos = self.atalhos_personalizados("m") 
-        espacos = "\n" * 4
-        help = Panel(f"""{self.logo}
-{atalhos}
-{espacos}                     """)
-        return help
-
     def comandos_menu_principal(self, key):
-        self.comandos_comuns(key, "m")
+        pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -162,17 +165,8 @@ class Interface():
 {espacos}                        """)
         return painel_conexoes
 
-    def atalhos_conexoes(self):
-        self.nome_painel_atual = "Help Conexoes"
-        atalhos = self.atalhos_personalizados("r")
-        espacos = "\n" * 4
-        help = Panel(f"""{self.logo}
-{atalhos}
-{espacos}                     """)
-        return help
-
     def comandos_conexoes(self, key):
-        self.comandos_comuns(key, "r")
+        pass
     
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -181,7 +175,6 @@ class Interface():
         processos = []
         num_max_process = 9
         for i, proc in enumerate(computer_info.get_processes(), start=1):
-            # acesse os valores pré-carregados em proc.info
             info = proc.info
             pid  = info['pid']
             name = info['name']
@@ -197,62 +190,77 @@ class Interface():
 {processos}                     """)
         return painel_processos
 
-    def atalhos_processos(self):
-        self.nome_painel_atual = "Help Processos"
-        atalhos = self.atalhos_personalizados("p")
-        espacos = "\n" * 4
-        help = Panel(f"""{self.logo}
-{atalhos}
-{espacos}                     """)
-        return help
-
     def comandos_processos(self, key):
-        self.comandos_comuns(key, "p")
+        pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    def info_diretorios(self):
-        self.nome_painel_atual = "Diretorios"
-        espacos = "\n" * 4
+    def info_terminal(self):
+        self.nome_painel_atual = "Terminal"
+        espacos = "\n" * 3
         reset = "[red]Resetar - Shift + D[/]"
         confirm = "[green]Confirmar - Shift + C[/]\n"
         painel_diretorios = Panel(f"""{self.logo}
-1 | Diretorio: {self.info_diretorios_projetos:.12}
-2 | Conda Env: {self.info_diretorios_conda_env:.12}
+1 | Projeto: {self.info_terminal_projetos:.12}
+2 | Conda Env: {self.info_terminal_conda_env:.12}
+3 | Programa: {self.info_terminal_programas:.12}
 
 {espacos}{confirm}{reset}""")
         return painel_diretorios
 
-    def atalhos_diretorios(self):
-        self.nome_painel_atual = "Help Diretorios"
-        atalhos = self.atalhos_personalizados("d")
-        espacos = "\n" * 4
-        help = Panel(f"""{self.logo}
-{atalhos}
-{espacos}                     """)
-        return help
-
-    def comandos_diretorios(self, key):
-        self.comandos_comuns(key, "d")
+    def comandos_terminal(self, key):
         comandos = []
         if key == "1":
             self.painel_atual = self.projetos
         elif key == "2":
             self.painel_atual = self.conda_env
+        elif key == "3":
+            self.painel_atual = self.programas
         elif key == "C":
-            if self.info_diretorios_conda_env != "":
+            if self.info_terminal_conda_env != "":
                 comandos.append("condaon")
-                comandos.append("conda activate " + self.info_diretorios_conda_env)
-            terminal_interactions.open_kitty_with_commands(self.info_diretorios_projetos, comandos) 
+                comandos.append("conda activate " + self.info_terminal_conda_env)
+            if self.info_terminal_programas != "":
+                if self.info_terminal_programas == "NeoVim":
+                    comandos.append("vim .")
+                elif self.info_terminal_programas == "Spotify":
+                    comandos.append("nc")
+                elif self.info_terminal_programas == "Update":
+                    comandos.append("super_update")
+                elif self.info_terminal_programas == "Interface Git":
+                    comandos.append("lg")
+                elif self.info_terminal_programas == "Tree":
+                    comandos.append("tree")
+                elif self.info_terminal_programas == "NewsBoat":
+                    comandos.append("nb")
+                elif self.info_terminal_programas == "Espaco Livre":
+                    comandos.append("duf")
+                elif self.info_terminal_programas == "TimeShift":
+                    comandos.append("ts")
+                elif self.info_terminal_programas == "Git Status":
+                    comandos.append("of")
+                elif self.info_terminal_programas == "Pokemon":
+                    comandos.append("pk")
+                elif self.info_terminal_programas == "Aquario":
+                    comandos.append("aqua")
+                elif self.info_terminal_programas == "Documentacao":
+                    comandos.append("docs")
+                elif self.info_terminal_programas == "Matrix":
+                    comandos.append("cmatrix")
+                elif self.info_terminal_programas == "TUTUTUTUT":
+                    comandos.append("cava")
+            terminal_interactions.open_kitty_with_commands(self.info_terminal_projetos, comandos) 
         elif key == "D":
-            self.info_diretorios_projetos = ""
-            self.info_diretorios_conda_env = ""
+            self.info_terminal_projetos = ""
+            self.info_terminal_conda_env = ""
+            self.info_terminal_programas = ""
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     def projetos(self):
-        self.nome_painel_atual = "Diretorios: projetos"
-        self.info_diretorios_projetos = ""
+        self.nome_painel_atual = "Terminal: projetos"
+        self.info_terminal_projetos = ""
+        diretorios = []
         espacos = "\n" * (9 - self.livro_projetos.numero_itens)
         diretorios = [f"{i} | {diretorio:.23}" + "\n" for i, diretorio in enumerate(self.livro_projetos.itens_pagina, 1)]
         diretorios[-1] = diretorios[-1].replace("\n", "")
@@ -261,19 +269,7 @@ class Interface():
 {diretorios}{espacos}      """)
         return painel
 
-    def atalhos_diretorios_projetos(self):
-        self.nome_painel_atual = "Help Diretorios: projetos"
-        atalhos = self.atalhos_personalizados("")
-        espacos = "\n" * 1
-        help = Panel(f"""{self.logo}
-< - Pagina Anterior
-> - Proxima Pagina
-{atalhos}
-{espacos}                     """)
-        return help
-
-    def comandos_diretorios_projetos(self, key):
-        self.comandos_comuns(key, "")
+    def comandos_terminal_projetos(self, key):
         if key == "<":
             self.livro_projetos.pagina_anterior
         elif key == ">":
@@ -281,41 +277,61 @@ class Interface():
         try: 
             num_key = int(key) - 1
             if self.livro_projetos.numero_itens > num_key > -1:
-                self.info_diretorios_projetos = self.livro_projetos.itens_pagina[num_key]
-                self.painel_atual = self.info_diretorios
+                self.info_terminal_projetos = self.livro_projetos.itens_pagina[num_key]
+                self.painel_atual = self.info_terminal
         except:
             pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     def conda_env(self):
-        self.nome_painel_atual = "Diretorios: conda env"
-        self.info_diretorios_conda_env = ""
-        espacos = "\n" * (9 - len(self.livro_envs))
-        envs = [f"{i} | {env:.23}" + "\n" for i, env in enumerate(self.livro_envs, 1)]
+        self.nome_painel_atual = "Terminal: conda env"
+        self.info_terminal_conda_env = ""
+        envs = []
+        espacos = "\n" * (9 - self.livro_envs.numero_itens)
+        envs = [f"{i} | {env:.23}" + "\n" for i, env in enumerate(self.livro_envs.itens_pagina, 1)]
         envs[-1] = envs[-1].replace("\n", "")
         envs = "".join(envs)
         painel = Panel(f"""{self.logo}
 {envs}{espacos}      """)
         return painel
 
-    def atalhos_diretorios_conda_env(self):
-        self.nome_painel_atual = "Help Diretorios: conda env"
-        atalhos = self.atalhos_personalizados("")
-        espacos = "\n" * 3
-        help = Panel(f"""{self.logo}
-{atalhos}
-{espacos}""")
-        return help
-
-    def comandos_diretorios_conda_env(self, key):
-        self.comandos_comuns(key, "")
+    def comandos_terminal_conda_env(self, key):
+        if key == "<":
+            self.livro_envs.pagina_anterior
+        elif key ==">":
+            self.livro_envs.proxima_pagina
         try:
             num_key = int(key) - 1
-            if len(self.livro_envs) > num_key > -1:
-                self.info_diretorios_conda_env = self.livro_envs[num_key]
-                self.painel_atual = self.info_diretorios
+            if self.livro_envs.numero_itens > num_key > -1:
+                self.info_terminal_conda_env = self.livro_envs.itens_pagina[num_key]
+                self.painel_atual = self.info_terminal
         except:
             pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def programas(self):
+        self.nome_painel_atual = "Terminal: programas"
+        self.info_terminal_programas = ""
+        programas = []
+        espacos = "\n" * (9 - self.livro_programas.numero_itens)
+        programas = [f"{i} | {programa:.23}" + "\n" for i, programa in enumerate(self.livro_programas.itens_pagina, 1)]
+        programas[-1] = programas[-1].replace("\n", "")
+        programas = "".join(programas)
+        painel = Panel(f"""{self.logo}
+{programas}{espacos}                       """)
+        return painel
+
+    def comandos_terminal_programas(self, key):
+        if key == "<":
+            self.livro_programas.pagina_anterior
+        elif key == ">":
+            self.livro_programas.proxima_pagina
+        try:
+            num_key = int(key) - 1
+            if self.livro_programas.numero_itens > num_key > -1:
+                self.info_terminal_programas = self.livro_programas.itens_pagina[num_key]
+                self.painel_atual = self.info_terminal
+        except:
+            pass
