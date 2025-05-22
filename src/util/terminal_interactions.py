@@ -1,5 +1,6 @@
 import os
 import subprocess
+import shlex
 
 def open_kitty_with_commands(path, commands):
     if path == "control-panel" or path == "gerenciamento_usina" or path == "teste_conhecimento_python" or path == "ponto-ecosocial":
@@ -10,6 +11,8 @@ def open_kitty_with_commands(path, commands):
         path = "~/dotfiles"
     elif path == "repos":
         path = "~/Documents/repos"
+    elif path == "applications":
+        path = "/usr/share/applications"
     else:
         path = "~"
 
@@ -31,3 +34,7 @@ def open_kitty_with_commands(path, commands):
         ])
     else:
         subprocess.Popen(['kitty', '--directory', target])
+
+def launch_app(app):
+    args = shlex.split(app)
+    subprocess.Popen(args)

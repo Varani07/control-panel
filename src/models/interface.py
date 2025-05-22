@@ -24,7 +24,7 @@ class Interface():
         self.logo = " "*12 + ""
 
         self.livro_projetos = Livro("Projetos")
-        self.livro_projetos.adicionar_conteudo(["control-panel", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles"]) 
+        self.livro_projetos.adicionar_conteudo(["control-panel", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles", "applications"]) 
 
         self.livro_envs = Livro("Environment")
         self.livro_envs.adicionar_conteudo(["control_panel_env", "ponto_ecosocial_env", "usina_env"])
@@ -33,10 +33,13 @@ class Interface():
         self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "NewsBoat", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
 
         self.livro_help = Livro("Help")
-        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair"])
+        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair"])
 
         self.livro_desligar = Livro("Desligar")
         self.livro_desligar.adicionar_conteudo(["Screen Lock", "Suspender", "Reboot", "Desligar"])
+
+        self.livro_apps = Livro("Apps")
+        self.livro_apps.adicionar_conteudo(["Firefox", "Discord", "Obsidian", "Komikku", "Bitwarden", "Pav", "Calendario", "Code", "Xed", "Btop", "Psensor", "BleachBit", "EasyEffecs", "Evolution", "Raspberry Pi Imager"])
 
     def monitoramento_tela_principal(self):
         fd = sys.stdin.fileno()
@@ -85,6 +88,8 @@ class Interface():
                         self.comandos_help(key)
                     elif self.nome_painel_atual == "Desligar":
                         self.comandos_desligar(key)
+                    elif self.nome_painel_atual == "Apps":
+                        self.comandos_apps(key)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
             os.system("clear")
@@ -106,6 +111,9 @@ class Interface():
             return True
         elif key == "d":
             self.painel_atual = self.info_desligar
+            return True
+        elif key == "a":
+            self.painel_atual = self.info_apps
             return True
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -350,7 +358,7 @@ class Interface():
         self.nome_painel_atual = "Desligar"
         opcoes = []
         espacos = "\n" * (9 - self.livro_desligar.numero_itens)
-        opcoes = [f"{i} | {opcao}\n" for i, opcao in enumerate(self.livro_desligar.itens_pagina, 1)]
+        opcoes = [f"{i} | {opcao:.23}\n" for i, opcao in enumerate(self.livro_desligar.itens_pagina, 1)]
         opcoes[-1] = opcoes[-1].replace("\n", "")
         opcoes = "".join(opcoes)
         painel = Panel(f"""{self.logo}
@@ -381,3 +389,69 @@ class Interface():
                 terminal_interactions.open_kitty_with_commands("~", commands)
         except:
             pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def info_apps(self):
+        self.nome_painel_atual = "Apps"
+        self.info_apps_games = ""
+        self.info_apps_ver_painel = False
+        self.info_apps_launcher = ""
+        apps = []
+        espacos = "\n" * (9 - self.livro_apps.numero_itens)
+        apps = [f"{i} | {app:.23}\n" for i, app in enumerate(self.livro_apps.itens_pagina, 1)]
+        apps[-1] = apps[-1].replace("\n", "")
+        apps = "".join(apps)
+        painel = Panel(f"""{self.logo}
+{apps}{espacos}                       """)
+        return painel
+
+    def comandos_apps(self, key):
+        if key == "<":
+            self.livro_apps.pagina_anterior
+        elif key == ">":
+            self.livro_apps.proxima_pagina
+
+        try:
+            num_key = int(key) - 1
+            if self.livro_apps.numero_itens > num_key > -1:
+                escolha = self.livro_apps.itens_pagina[num_key]
+                commands = ""
+
+                if escolha == "Firefox":
+                    commands = "/usr/lib/firefox/firefox"
+                elif escolha == "Discord":
+                    commands = "/usr/bin/discord"
+                elif escolha == "Komikku":
+                    commands = "/usr/bin/komikku"
+                elif escolha == "Obsidian":
+                    commands = "/usr/bin/obsidian"
+                elif escolha == "Bitwarden":
+                    commands = "bitwarden-desktop"
+                elif escolha == "Pav":
+                    commands = "pavucontrol"
+                elif escolha == "Xed":
+                    commands = "xed"
+                elif escolha == "Psensor":
+                    commands = "psensor"
+                elif escolha == "Code":
+                    commands = "code-oss"
+                elif escolha == "BleachBit":
+                    commands = "bleachbit"
+                elif escolha == "Calendario":
+                    commands = "gnome-calendar"
+                elif escolha == "Btop":
+                    commands = "btop"
+                elif escolha == "Evolution":
+                    commands = "evolution"
+                elif escolha == "EasyEffects":
+                    commands = "easyeffects"
+                elif escolha == "Raspberry Pi Imager":
+                    commands = "rpi-imager"
+                    
+                terminal_interactions.launch_app(commands)
+        except:
+            pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
