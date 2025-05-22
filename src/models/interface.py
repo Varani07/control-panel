@@ -29,6 +29,9 @@ class Interface():
         self.info_apps_ver_painel = False
         self.info_apps_launcher = ""
 
+        self.info_processos_pausados = False
+        self.info_processos_filtro = "memoria"
+
         self.logo = " "*12 + ""
 
         self.livro_projetos = Livro("Projetos")
@@ -50,7 +53,10 @@ class Interface():
         self.livro_chts.adicionar_conteudo(["for"])
 
         self.livro_help = Livro("Help")
-        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "W | Conectar Wifi"])
+        self.livro_help.adicionar_conteudo(["[Geral]", "r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair", "", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "W | Conectar Wifi", "", "[Processos]", "P | pause/play", "Funciona fora do pause:", "C | Filtrar por cpu%", "M | Filtrar por memoria%", "Funciona em pause:", "< | Pagina Anterior", "> | Proxima Pagina", "<num> | Mata/Termina o processo"])
+
+        self.livro_processos = Livro("Processos")
+        self.livro_processos.adicionar_conteudo(computer_info.get_processes(self.info_processos_filtro))
 
         self.livro_desligar = Livro("Desligar")
         self.livro_desligar.adicionar_conteudo(["Screen Lock", "Suspender", "Reboot", "Desligar"])
@@ -94,7 +100,7 @@ class Interface():
                     elif self.nome_painel_atual == "Terminal":
                         self.comandos_terminal(key)
                     elif self.nome_painel_atual == "Processos":
-                        self.comandos_processos(key)
+                        self.comandos_processos(key, live)
                     elif self.nome_painel_atual == "Terminal: projetos":
                         self.comandos_terminal_projetos(key)
                     elif self.nome_painel_atual == "Terminal: conda env":
@@ -280,7 +286,6 @@ class Interface():
         if self.livro_find_wifi.numero_itens > 0:
             espacos = "\n" * (9 - self.livro_find_wifi.numero_itens)
             redes = [f"{i} | {rede.split('|')[1]:.23}\n" for i, rede in enumerate(self.livro_find_wifi.itens_pagina, 1)]
-        #    redes = [re.sub(r"\\+", "", rede) for rede in redes]
             redes[-1] = redes[-1].replace("\n", "")
             redes = "".join(redes)
         else:
@@ -318,25 +323,53 @@ class Interface():
     def info_processos(self):
         self.nome_painel_atual = "Processos"
         processos = []
-        num_max_process = 9
-        for i, proc in enumerate(computer_info.get_processes(), start=1):
-            info = proc.info
-            pid  = info['pid']
-            name = info['name']
-            cpu  = info['cpu_percent']
-            mem  = info['memory_percent']
-            if i < num_max_process:
-                processos.append(f"{name:8.8} | {cpu:<5.1f}% | {mem:.1f}%" + "\n")
-            if i == num_max_process:
-                processos.append(f"{name:8.8} | {cpu:<5.1f}% | {mem:.1f}%")
-                break
+        if not self.info_processos_pausados:
+            self.livro_processos = Livro("Processos")
+            self.livro_processos.adicionar_conteudo(computer_info.get_processes(self.info_processos_filtro))
+
+        espacos = "\n" * (9 - self.livro_processos.numero_itens)
+
+        processos = [f"{i}.{processo.info['name']:8.8} | {processo.info['cpu_percent']:<5.1f}% | {processo.info['memory_percent']:.1f}%" + "\n" for i, processo in enumerate(self.livro_processos.itens_pagina, 1)]
+        processos[-1] = processos[-1].replace("\n", "")
         processos = "".join(processos)
-        painel_processos = Panel(f"""{self.logo}
-{processos}                     """)
+
+        painel_processos = Panel(f"""{self.logo}\n{processos}{espacos}""")
         return painel_processos
 
-    def comandos_processos(self, key):
-        pass
+    def comandos_processos(self, key, live):
+        if key == "P":
+            self.info_processos_pausados = not self.info_processos_pausados
+        elif key == "M" and not self.info_processos_pausados:
+            self.info_processos_filtro = "memoria"
+        elif key == "C" and not self.info_processos_pausados:
+            self.info_processos_filtro = "cpu"
+        elif key =="<" and self.info_processos_pausados:
+            self.livro_processos.pagina_anterior
+        elif key == ">" and self.info_processos_pausados:
+            self.livro_processos.proxima_pagina
+
+        if self.info_processos_pausados:
+            try:
+                num_key = int(key) - 1
+                if self.livro_processos.numero_itens > num_key > -1:
+                    live.stop()
+                    os.system("clear")
+                    termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
+                    escolha = console.input("0 - Voltar\n1 - Terminate Process\n2 - Kill Process\n\nEscolha: ")
+                    os.system("clear")
+                    tty.setcbreak(self.fd)
+                    live.start()
+                    if escolha == "1":
+                        computer_info.terminate_process(int(self.livro_processos.itens_pagina[num_key].info['pid']))
+                        self.info_processos_pausados = False
+                    elif escolha == "2":
+                        computer_info.kill_process(int(self.livro_processos.itens_pagina[num_key].info['pid']))
+                        self.info_processos_pausados = False
+                    else:
+                        pass
+
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 

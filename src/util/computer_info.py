@@ -4,7 +4,7 @@ from dbus_next.aio import MessageBus
 from dbus_next.constants import BusType
 import heapq
 import time
-import os, shutil
+import os, shutil, signal
 
 def pegar_chave():
     dr, _, _ = select.select([sys.stdin], [], [], 0)
@@ -88,7 +88,10 @@ async def _fetch_bt_connected() -> list[str]:
 def get_connected_bt_devices() -> list[str]:
     return asyncio.run(_fetch_bt_connected())
 
-def get_processes():
+def get_processes(filtro):
+    if filtro == "memoria":
+        filtro = "memory"
+    filtro = filtro + "_percent"
     processes =  list(psutil.process_iter(attrs=[
         'pid',
         'name',
@@ -96,13 +99,25 @@ def get_processes():
         'memory_percent'
         ]))
 
-    num_itens = 10
+    num_itens = 9 * 5
     processes = heapq.nlargest(
         num_itens,
         processes,
-        key=lambda processo: processo.info['memory_percent']
+        key=lambda processo: processo.info[filtro]
             )
     return processes
+
+def terminate_process(pid: int) -> None:
+    """
+    Pede encerramento gracioso (SIGTERM) do processo `pid`.
+    """
+    os.kill(pid, signal.SIGTERM)
+
+def kill_process(pid: int) -> None:
+    """
+    Mata imediatamente (SIGKILL) o processo `pid`.
+    """
+    os.kill(pid, signal.SIGKILL)
 
 def velocidade_download_upload(intervalo=1.0):
     io1 = psutil.net_io_counters()
