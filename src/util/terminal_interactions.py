@@ -35,6 +35,28 @@ def open_kitty_with_commands(path, commands):
     else:
         subprocess.Popen(['kitty', '--directory', target])
 
-def launch_app(app):
-    args = shlex.split(app)
-    subprocess.Popen(args)
+def launch_app(app, launcher):
+    if not launcher:
+        args = shlex.split(app)
+        subprocess.Popen(args)
+        subprocess.Popen(
+            args,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+    else:
+        parts = shlex.split(app)
+
+        env = os.environ.copy()
+        while parts and "=" in parts[0] and not parts[0].startswith("="):
+            k, v = parts.pop(0).split("=", 1)
+            env[k] = v
+
+        subprocess.Popen(
+            parts,
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )

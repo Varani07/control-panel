@@ -30,7 +30,10 @@ class Livro():
             
     @property
     def numero_itens(self):
-        numero_de_itens = len(self.paginas[self.pagina_atual])
+        try:
+            numero_de_itens = len(self.paginas[self.pagina_atual])
+        except:
+            numero_de_itens = 0
         return numero_de_itens
 
     @property

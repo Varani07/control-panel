@@ -3,6 +3,8 @@ import asyncio
 from dbus_next.aio import MessageBus
 from dbus_next.constants import BusType
 import heapq
+import time
+import os, shutil
 
 def pegar_chave():
     dr, _, _ = select.select([sys.stdin], [], [], 0)
@@ -101,3 +103,174 @@ def get_processes():
         key=lambda processo: processo.info['memory_percent']
             )
     return processes
+
+def velocidade_download_upload(intervalo=1.0):
+    io1 = psutil.net_io_counters()
+    r1, s1 = io1.bytes_recv, io1.bytes_sent
+
+    time.sleep(intervalo)
+
+    io2 = psutil.net_io_counters()
+    r2, s2 = io2.bytes_recv, io2.bytes_sent
+
+    download_bps = (r2 - r1) * 8 / intervalo
+    upload_bps   = (s2 - s1) * 8 / intervalo
+
+    return download_bps, upload_bps
+
+def scan_devices(scan_duration=5, connected=False):
+    # liga o scan
+    subprocess.run(
+        ['bluetoothctl', 'scan', 'on'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    time.sleep(scan_duration)
+    # desliga o scan
+    subprocess.run(
+        ['bluetoothctl', 'scan', 'off'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+
+    out = subprocess.check_output(['bluetoothctl', 'devices']).decode()
+    devices = []
+    for line in out.splitlines():
+        parts = line.split(' ', 2)
+        if len(parts) >= 3:
+            mac, name = parts[1], parts[2]
+            # só adiciona se NÃO estiver conectado
+            if connected:
+                if is_connected(mac):
+                    devices.append(f"{mac}|{name}")
+            else:
+                if not is_connected(mac):
+                    devices.append(f"{mac}|{name}")
+    return devices
+
+def is_connected(mac: str) -> bool:
+    """
+    Retorna True se o dispositivo MAC estiver conectado agora.
+    """
+    info = subprocess.check_output(
+        ['bluetoothctl', 'info', mac],
+        stderr=subprocess.DEVNULL
+    ).decode()
+    return 'Connected: yes' in info
+
+def connect_device(mac: str) -> None:
+    """
+    Conecta ao dispositivo Bluetooth de endereço MAC fornecido.
+    Não retorna nada nem imprime saída.
+    """
+    subprocess.run(
+        ['bluetoothctl', 'connect', mac],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+
+def disconnect_device(mac: str) -> None:
+    """
+    Desconecta o dispositivo Bluetooth com o endereço MAC fornecido.
+    """
+    subprocess.run(
+        ['bluetoothctl', 'disconnect', mac],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True
+    )
+
+def remove_device(mac: str) -> None:
+    """
+    Remove (desaparelha) o dispositivo Bluetooth com o endereço MAC fornecido.
+    """
+    subprocess.run(
+        ['bluetoothctl', 'remove', mac],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True
+    )
+
+def pair_device(mac: str) -> None:
+    # faz o pair e marca como trusted
+    subprocess.run(['bluetoothctl', 'pair', mac],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['bluetoothctl', 'trust', mac],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def scan_discoverable_devices(scan_duration: float = 5.0) -> list[str]:
+    """
+    Retorna lista de strings "MAC|Nome" de TODOS os devices que estiverem
+    em modo discoverable naquele intervalo.
+    """
+    # abre o bluetoothctl
+    p = subprocess.Popen(
+        ['bluetoothctl'],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True
+    )
+
+    # liga o scan
+    p.stdin.write('scan on\n')
+    p.stdin.flush()
+    time.sleep(scan_duration)
+    # desliga o scan e sai
+    p.stdin.write('scan off\nexit\n')
+    out, _ = p.communicate()
+
+    # parseia só as linhas “Device XX:XX… Nome”
+    seen = {}
+    for line in out.splitlines():
+        if 'Device ' in line:
+            # formados como “[NEW] Device AA:BB:… Nome”
+            _, rest = line.split('Device ', 1)
+            mac, name = rest.split(' ', 1)
+            seen[mac] = name.strip()
+
+    return [f"{mac}|{name}" for mac, name in seen.items()]
+
+def scan_wifi_networks() -> list[str]:
+    nmcli = shutil.which('nmcli') or '/usr/bin/nmcli'
+    if not os.path.isfile(nmcli):
+        raise FileNotFoundError(
+            f"nmcli não encontrado em {nmcli}. "
+            "Verifique se o NetworkManager está instalado."
+        )
+
+    out = subprocess.check_output(
+        [nmcli, '-t', '-f', 'BSSID,SSID', 'device', 'wifi', 'list'],
+        text=True
+    )
+    networks = []
+    for line in out.splitlines():
+        if not line:
+            continue
+        # separa EM DUAS PARTES mas do fim pra frente
+        bssid, ssid = line.rsplit(":", 1)
+        networks.append(f"{bssid}|{ssid}")
+    return networks
+
+def connect_wifi(ssid: str, password: str | None = None) -> None:
+    """
+    Conecta à rede Wi-Fi identificada por SSID.
+    Se a rede exigir senha, passe-a como segundo argumento.
+    Não retorna nada nem imprime saída.
+    """
+    cmd = ["nmcli", "device", "wifi", "connect", ssid]
+    if password:
+        cmd += ["password", password]
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+def disconnect_wifi(ssid: str) -> None:
+    """
+    Desconecta a conexão cuja ID é igual ao SSID informado.
+    Não retorna nada nem imprime saída.
+    """
+    subprocess.run(
+        ["nmcli", "connection", "down", "id", ssid],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False
+    )

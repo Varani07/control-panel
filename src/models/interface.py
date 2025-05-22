@@ -6,6 +6,7 @@ import psutil
 import shutil
 import time
 import os, sys, termios, tty 
+import re
 
 from ..util import computer_info, icons, terminal_interactions
 from .livro import Livro
@@ -20,6 +21,9 @@ class Interface():
         self.info_terminal_projetos = ""
         self.info_terminal_conda_env = ""
         self.info_terminal_programas = ""
+        self.info_apps_games = ""
+        self.info_apps_ver_painel = False
+        self.info_apps_launcher = ""
 
         self.logo = " "*12 + ""
 
@@ -30,16 +34,16 @@ class Interface():
         self.livro_envs.adicionar_conteudo(["control_panel_env", "ponto_ecosocial_env", "usina_env"])
 
         self.livro_programas = Livro("Programas")
-        self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "NewsBoat", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
+        self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "Speed Test", "NewsBoat", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
 
         self.livro_help = Livro("Help")
-        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair"])
+        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "W | Conectar Wifi", "I | Desconectar Wifi"])
 
         self.livro_desligar = Livro("Desligar")
         self.livro_desligar.adicionar_conteudo(["Screen Lock", "Suspender", "Reboot", "Desligar"])
 
         self.livro_apps = Livro("Apps")
-        self.livro_apps.adicionar_conteudo(["Firefox", "Discord", "Obsidian", "Komikku", "Bitwarden", "Pav", "Calendario", "Code", "Xed", "Btop", "Psensor", "BleachBit", "EasyEffecs", "Evolution", "Raspberry Pi Imager"])
+        self.livro_apps.adicionar_conteudo(["Firefox", "Discord", "Obsidian", "Komikku", "Steam", "Heroic", "Bitwarden", "Pav", "Calendario", "Code", "Xed", "Btop", "Psensor", "BleachBit", "EasyEffecs", "Evolution", "Raspberry Pi Imager"])
 
     def monitoramento_tela_principal(self):
         fd = sys.stdin.fileno()
@@ -90,6 +94,12 @@ class Interface():
                         self.comandos_desligar(key)
                     elif self.nome_painel_atual == "Apps":
                         self.comandos_apps(key)
+                    elif self.nome_painel_atual == "Apps: games":
+                        self.comandos_games(key)
+                    elif self.nome_painel_atual == "Conexoes: achar bluetooth":
+                        self.comandos_achar_bluetooth(key)
+                    elif self.nome_painel_atual == "Conexoes: achar wifi":
+                        self.comandos_achar_wifi(key)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
             os.system("clear")
@@ -170,20 +180,116 @@ class Interface():
         devices = ""
         for device in computer_info.get_connected_bt_devices():
             devices += "-   " + device.split("(")[0] + "\n"
-        quantidade_espacos = 5 - linhas
+        quantidade_espacos = 3 - linhas
         espacos = ""
         for _ in range(quantidade_espacos):
             espacos += "\n"
+        download, upload = computer_info.velocidade_download_upload()
         painel_conexoes = Panel(f"""{self.logo}
    {computer_info.get_ssid()}
+󱑥   {download/1e6:.2f} Mb/s
+󰦘   {upload/1e6:.2f} Mb/s
 󰂯   Bluetooth Devices:
 {devices}
 {espacos}                        """)
         return painel_conexoes
 
     def comandos_conexoes(self, key):
-        pass
+        if key == "C":
+            self.livro_find_bluetooth = Livro("Connect Devices")
+            self.livro_find_bluetooth.adicionar_conteudo(computer_info.scan_devices(5, False))
+            self.painel_atual = self.achar_bluetooth
+        elif key == "D":
+            self.livro_find_bluetooth = Livro("Disconnect Devices")
+            self.livro_find_bluetooth.adicionar_conteudo(computer_info.scan_devices(5, True))
+            self.painel_atual = self.achar_bluetooth
+        elif key == "R":
+            self.livro_find_bluetooth = Livro("Remove Devices")
+            self.livro_find_bluetooth.adicionar_conteudo(computer_info.scan_devices(5, True))
+            self.painel_atual = self.achar_bluetooth
+        elif key == "P":
+            self.livro_find_bluetooth = Livro("Pare Devices")
+            self.livro_find_bluetooth.adicionar_conteudo(computer_info.scan_discoverable_devices(5))
+            self.painel_atual = self.achar_bluetooth
+        elif key == "I":
+            self.livro_find_wifi = Livro("Disconnect Wifi")
+            self.livro_find_wifi.adicionar_conteudo(computer_info.scan_wifi_networks())
+            self.painel_atual = self.achar_wifi
+        elif key == "W":
+            self.livro_find_wifi = Livro("Connect Wifi")
+            self.livro_find_wifi.adicionar_conteudo(computer_info.scan_wifi_networks())
+            self.painel_atual = self.achar_wifi
     
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def achar_bluetooth(self):
+        self.nome_painel_atual = "Conexoes: achar bluetooth"
+        devices = []
+        if self.livro_find_bluetooth.numero_itens > 0:
+            espacos = "\n" * (9 - self.livro_find_bluetooth.numero_itens)
+            devices = [f"{i} | {device.split('|')[1]:.23}\n" for i, device in enumerate(self.livro_find_bluetooth.itens_pagina, 1)]
+            devices[-1] = devices[-1].replace("\n", "")
+            devices = "".join(devices)
+        else:
+            espacos = "\n" * (7 - self.livro_find_bluetooth.numero_itens)
+            devices = "[red]Nenhum Dispositivo Encontrado[/]"
+        painel = Panel(f"""{self.logo}\n{devices}{espacos}""")
+        return painel
+
+    def comandos_achar_bluetooth(self, key):
+        if key == "<":
+            self.livro_find_bluetooth.pagina_anterior
+        elif key == ">":
+            self.livro_find_bluetooth.proxima_pagina
+
+        try:
+            num_key = int(key) - 1
+            if self.livro_find_bluetooth.numero_itens > num_key > -1:
+                if self.livro_find_bluetooth.nome_livro == "Connect Devices":
+                    computer_info.connect_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
+                if self.livro_find_bluetooth.nome_livro == "Disconnect Devices":
+                    computer_info.disconnect_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
+                if self.livro_find_bluetooth.nome_livro == "Remove Devices":
+                    computer_info.remove_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
+                if self.livro_find_bluetooth.nome_livro == "Pare Devices":
+                    computer_info.pair_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
+                self.painel_atual = self.info_conexoes
+        except:
+            pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def achar_wifi(self):
+        self.nome_painel_atual = "Conexoes: achar wifi"
+        devices = []
+        if self.livro_find_wifi.numero_itens > 0:
+            espacos = "\n" * (9 - self.livro_find_wifi.numero_itens)
+            redes = [f"{i} | {rede.split('|')[1]:.23}\n" for i, rede in enumerate(self.livro_find_wifi.itens_pagina, 1)]
+        #    redes = [re.sub(r"\\+", "", rede) for rede in redes]
+            redes[-1] = redes[-1].replace("\n", "")
+            redes = "".join(redes)
+        else:
+            espacos = "\n" * (7 - self.livro_find_wifi.numero_itens)
+            redes = "[red]Nenhuma Rede Encontrada[/]"
+        painel = Panel(f"""{self.logo}\n{redes}{espacos}""")
+        return painel
+
+    def comandos_achar_wifi(self, key):
+        if key == "<":
+            self.livro_find_wifi.pagina_anterior
+        elif key == ">":
+            self.livro_find_wifi.proxima_pagina
+
+        try:
+            num_key = int(key) - 1
+            if self.livro_find_wifi.numero_itens > num_key > -1:
+                if self.livro_find_wifi.nome_livro == "Disconnect Wifi":
+                    pass
+                elif self.livro_find_wifi.nome_livro == "Connect Wifi":
+                    pass
+        except:
+            pass
+
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     def info_processos(self):
@@ -265,6 +371,8 @@ class Interface():
                     comandos.append("cmatrix")
                 elif self.info_terminal_programas == "TUTUTUTUT":
                     comandos.append("cava")
+                elif self.info_terminal_programas == "Speed Test":
+                    comandos.append("speedtest-cli --secure")
             terminal_interactions.open_kitty_with_commands(self.info_terminal_projetos, comandos) 
         elif key == "D":
             self.info_terminal_projetos = ""
@@ -448,10 +556,63 @@ class Interface():
                     commands = "easyeffects"
                 elif escolha == "Raspberry Pi Imager":
                     commands = "rpi-imager"
-                    
-                terminal_interactions.launch_app(commands)
+
+                if escolha == "Steam":
+                    self.info_apps_launcher = "steam"
+                    self.painel_atual = self.games
+                elif escolha == "Heroic":
+                    self.info_apps_launcher = "heroic"
+                    self.painel_atual = self.games
+                else:
+                    terminal_interactions.launch_app(commands, False)
         except:
             pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+    def games(self):
+        self.nome_painel_atual = "Apps: games"
+        if not self.info_apps_ver_painel:
+            ver_painel = f"[red]Ativar o Painel[/]"
+        else:
+            ver_painel = f"[green]Desativar o Painel[/]"
+        espacos = "\n" * 0
+        painel = Panel(f"""{self.logo}\n1 | 30fps\n2 | 45fps\n3 | 60fps\n4 | 75fps\n5 | 90fps\n6 | {ver_painel}\n\nFps: {self.info_apps_games}\nShift + C Para Prosseguir{espacos}""")
+        return painel
+
+    def comandos_games(self, key):
+        if key == "C":
+            comando = ""
+            if self.info_apps_launcher == "steam":
+                comando = "prime-run /usr/bin/steam"
+            elif self.info_apps_launcher == "heroic":
+                comando = "prime-run flatpak run com.heroicgameslauncher.hgl"
+
+            if self.info_apps_ver_painel:
+                if self.info_apps_launcher == "steam":
+                    comando = "MANGOHUD=1 " + comando
+                elif self.info_apps_launcher == "heroic":
+                    comando = "prime-run flatpak run --env=DXVK_HUD=1 com.heroicgameslauncher.hgl"
+
+            if self.info_apps_games != "":
+                comando = f"DXVK_FRAME_RATE={self.info_apps_games} " + comando
+            
+            terminal_interactions.launch_app(comando, True)
+            self.painel_atual = self.info_apps
+
+        try:
+            num_key = int(key)
+            if num_key == 1:
+                self.info_apps_games = "30"
+            elif num_key == 2:
+                self.info_apps_games = "45"
+            elif num_key == 3:
+                self.info_apps_games = "60"
+            elif num_key == 4:
+                self.info_apps_games = "75"
+            elif num_key == 5:
+                self.info_apps_games = "90"
+            elif num_key == 6:
+                self.info_apps_ver_painel = not self.info_apps_ver_painel
+        except:
+            pass
