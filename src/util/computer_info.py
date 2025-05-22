@@ -252,25 +252,39 @@ def scan_wifi_networks() -> list[str]:
         networks.append(f"{bssid}|{ssid}")
     return networks
 
-def connect_wifi(ssid: str, password: str | None = None) -> None:
-    """
-    Conecta à rede Wi-Fi identificada por SSID.
-    Se a rede exigir senha, passe-a como segundo argumento.
-    Não retorna nada nem imprime saída.
-    """
-    cmd = ["nmcli", "device", "wifi", "connect", ssid]
-    if password:
-        cmd += ["password", password]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-
-def disconnect_wifi(ssid: str) -> None:
-    """
-    Desconecta a conexão cuja ID é igual ao SSID informado.
-    Não retorna nada nem imprime saída.
-    """
-    subprocess.run(
-        ["nmcli", "connection", "down", "id", ssid],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False
+def _get_wifi_iface() -> str:
+    """Retorna o nome da interface Wi-Fi (ex: wlp3s0)."""
+    nmcli = shutil.which("nmcli") or "/usr/bin/nmcli"
+    out = subprocess.check_output(
+        [nmcli, "-t", "-f", "DEVICE,TYPE", "device"], text=True
     )
+    for line in out.splitlines():
+        dev, typ = line.split(":", 1)
+        if typ == "wifi":
+            return dev
+    raise RuntimeError("Interface Wi-Fi não encontrada")
+
+def connect_wifi(ssid: str, password: str) -> None:
+    """
+    Conecta à rede Wi-Fi `ssid` protegida por WPA-PSK `password`.
+    Sempre recria o profile do zero, para não herdar configurações estranhas.
+    """
+    nmcli = shutil.which("nmcli") or "/usr/bin/nmcli"
+    iface = _get_wifi_iface()
+
+    # Deleta qualquer profile com o mesmo nome (para evitar conflito)
+    subprocess.run([nmcli, "connection", "delete", ssid], check=False)
+
+    # Cria um novo profile WPA-PSK do zero
+    subprocess.run([
+        nmcli, "connection", "add",
+        "type", "wifi",
+        "ifname", iface,
+        "con-name", ssid,
+        "ssid", ssid,
+        "wifi-sec.key-mgmt", "wpa-psk",
+        "wifi-sec.psk", password
+    ], check=True)
+
+    # Sobe a conexão
+    subprocess.run([nmcli, "connection", "up", ssid], check=True)

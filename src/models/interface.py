@@ -21,6 +21,10 @@ class Interface():
         self.info_terminal_projetos = ""
         self.info_terminal_conda_env = ""
         self.info_terminal_programas = ""
+        self.info_terminal_animes = ""
+        self.info_terminal_linguagens = ""
+        self.info_terminal_chts = ""
+
         self.info_apps_games = ""
         self.info_apps_ver_painel = False
         self.info_apps_launcher = ""
@@ -36,8 +40,17 @@ class Interface():
         self.livro_programas = Livro("Programas")
         self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "Speed Test", "NewsBoat", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
 
+        self.livro_animes = Livro("Animes")
+        self.livro_animes.adicionar_conteudo(["One Piece", "Re: Zero", "Tower Of God"])
+
+        self.livro_linguagens = Livro("Linguagens")
+        self.livro_linguagens.adicionar_conteudo(["python"])
+
+        self.livro_chts = Livro("Cheat Sheets")
+        self.livro_chts.adicionar_conteudo(["for"])
+
         self.livro_help = Livro("Help")
-        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "W | Conectar Wifi", "I | Desconectar Wifi"])
+        self.livro_help.adicionar_conteudo(["r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "W | Conectar Wifi"])
 
         self.livro_desligar = Livro("Desligar")
         self.livro_desligar.adicionar_conteudo(["Screen Lock", "Suspender", "Reboot", "Desligar"])
@@ -46,12 +59,12 @@ class Interface():
         self.livro_apps.adicionar_conteudo(["Firefox", "Discord", "Obsidian", "Komikku", "Steam", "Heroic", "Bitwarden", "Pav", "Calendario", "Code", "Xed", "Btop", "Psensor", "BleachBit", "EasyEffecs", "Evolution", "Raspberry Pi Imager"])
 
     def monitoramento_tela_principal(self):
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+        self.fd = sys.stdin.fileno()
+        self.old_settings = termios.tcgetattr(self.fd)
 
         os.system("clear")
         try:
-            tty.setcbreak(fd)
+            tty.setcbreak(self.fd)
             with Live(console=console, refresh_per_second=4) as live:
                 while True:
                     live.update(self.painel_atual())
@@ -99,9 +112,15 @@ class Interface():
                     elif self.nome_painel_atual == "Conexoes: achar bluetooth":
                         self.comandos_achar_bluetooth(key)
                     elif self.nome_painel_atual == "Conexoes: achar wifi":
-                        self.comandos_achar_wifi(key)
+                        self.comandos_achar_wifi(key, live)
+                    elif self.nome_painel_atual == "Terminal: animes":
+                        self.comandos_animes(key)
+                    elif self.nome_painel_atual == "Terminal: linguagens":
+                        self.comandos_linguagens(key)
+                    elif self.nome_painel_atual == "Terminal: chts":
+                        self.comandos_chts(key)
         finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
             os.system("clear")
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -211,10 +230,6 @@ class Interface():
             self.livro_find_bluetooth = Livro("Pare Devices")
             self.livro_find_bluetooth.adicionar_conteudo(computer_info.scan_discoverable_devices(5))
             self.painel_atual = self.achar_bluetooth
-        elif key == "I":
-            self.livro_find_wifi = Livro("Disconnect Wifi")
-            self.livro_find_wifi.adicionar_conteudo(computer_info.scan_wifi_networks())
-            self.painel_atual = self.achar_wifi
         elif key == "W":
             self.livro_find_wifi = Livro("Connect Wifi")
             self.livro_find_wifi.adicionar_conteudo(computer_info.scan_wifi_networks())
@@ -274,7 +289,7 @@ class Interface():
         painel = Panel(f"""{self.logo}\n{redes}{espacos}""")
         return painel
 
-    def comandos_achar_wifi(self, key):
+    def comandos_achar_wifi(self, key, live):
         if key == "<":
             self.livro_find_wifi.pagina_anterior
         elif key == ">":
@@ -283,10 +298,18 @@ class Interface():
         try:
             num_key = int(key) - 1
             if self.livro_find_wifi.numero_itens > num_key > -1:
-                if self.livro_find_wifi.nome_livro == "Disconnect Wifi":
-                    pass
-                elif self.livro_find_wifi.nome_livro == "Connect Wifi":
-                    pass
+                ssid = re.sub(r"\\+", "", self.livro_find_wifi.itens_pagina[num_key].split("|")[1])
+                if self.livro_find_wifi.nome_livro == "Connect Wifi":
+                    live.stop()
+                    os.system("clear")
+                    termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
+                    password = console.input("password: ")
+                    os.system("clear")
+                    tty.setcbreak(self.fd)
+                    live.start()
+                    computer_info.connect_wifi(ssid, password)
+                    self.painel_atual = self.info_conexoes
+
         except:
             pass
 
@@ -319,15 +342,13 @@ class Interface():
 
     def info_terminal(self):
         self.nome_painel_atual = "Terminal"
-        espacos = "\n" * 3
+        espacos = "\n" * 1
         reset = "[red]Resetar - Shift + D[/]"
         confirm = "[green]Confirmar - Shift + C[/]\n"
-        painel_diretorios = Panel(f"""{self.logo}
-1 | Projeto: {self.info_terminal_projetos:.12}
-2 | Conda Env: {self.info_terminal_conda_env:.12}
-3 | Programa: {self.info_terminal_programas:.12}
-
-{espacos}{confirm}{reset}""")
+        chts = ""
+        if self.info_terminal_chts != "":
+            chts = f" | {self.info_terminal_chts}"
+        painel_diretorios = Panel(f"""{self.logo}\n1 | Projeto: {self.info_terminal_projetos:.12}\n2 | Conda Env: {self.info_terminal_conda_env:.12}\n3 | Programa: {self.info_terminal_programas:.12}\n4 | Anime: {self.info_terminal_animes:.12}\n5 | Cheat Sheet:\n{self.info_terminal_linguagens:.12}{chts:.12}\n{espacos}{confirm}{reset}""")
         return painel_diretorios
 
     def comandos_terminal(self, key):
@@ -338,6 +359,10 @@ class Interface():
             self.painel_atual = self.conda_env
         elif key == "3":
             self.painel_atual = self.programas
+        elif key == "4":
+            self.painel_atual = self.animes
+        elif key == "5":
+            self.painel_atual = self.linguagens
         elif key == "C":
             if self.info_terminal_conda_env != "":
                 comandos.append("condaon")
@@ -373,11 +398,18 @@ class Interface():
                     comandos.append("cava")
                 elif self.info_terminal_programas == "Speed Test":
                     comandos.append("speedtest-cli --secure")
+            if self.info_terminal_animes != "":
+                comandos.append(f"ani {self.info_terminal_animes}")
+            if self.info_terminal_chts != "" and self.info_terminal_linguagens != "":
+                comandos.append(f"curl cht.sh/{self.info_terminal_linguagens}/{self.info_terminal_chts}")
             terminal_interactions.open_kitty_with_commands(self.info_terminal_projetos, comandos) 
         elif key == "D":
             self.info_terminal_projetos = ""
             self.info_terminal_conda_env = ""
             self.info_terminal_programas = ""
+            self.info_terminal_animes = ""
+            self.info_terminal_linguagens = ""
+            self.info_terminal_chts = ""
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -456,6 +488,88 @@ class Interface():
             num_key = int(key) - 1
             if self.livro_programas.numero_itens > num_key > -1:
                 self.info_terminal_programas = self.livro_programas.itens_pagina[num_key]
+                self.painel_atual = self.info_terminal
+        except:
+            pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def animes(self):
+        self.nome_painel_atual = "Terminal: animes"
+        self.info_terminal_animes = ""
+        animes = []
+        espacos = "\n" * (9 - self.livro_animes.numero_itens)
+        animes = [f"{i} | {anime:.23}\n" for i, anime in enumerate(self.livro_animes.itens_pagina, 1)]
+        animes[-1] = animes[-1].replace("\n", "")
+        animes = "".join(animes)
+        painel = Panel(f"""{self.logo}\n{animes}{espacos}""")
+        return painel
+
+    def comandos_animes(self, key):
+        if key == "<":
+            self.livro_animes.pagina_anterior
+        elif key == ">":
+            self.livro_animes.proxima_pagina
+
+        try:
+            num_key = int(key) - 1
+            if self.livro_animes.numero_itens > num_key > -1:
+                self.info_terminal_animes = self.livro_animes.itens_pagina[num_key]
+                self.painel_atual = self.info_terminal
+        except:
+            pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def linguagens(self):
+        self.nome_painel_atual = "Terminal: linguagens"
+        self.info_terminal_linguagens = ""
+        self.info_terminal_chts = ""
+        linguagens = []
+        espacos = "\n" * (9 - self.livro_linguagens.numero_itens)
+        linguagens = [f"{i} | {linguagem:.23}\n" for i, linguagem in enumerate(self.livro_linguagens.itens_pagina, 1)]
+        linguagens[-1] = linguagens[-1].replace("\n", "")
+        linguagens = "".join(linguagens)
+        painel = Panel(f"""{self.logo}\n{linguagens}{espacos}""")
+        return painel
+
+    def comandos_linguagens(self, key):
+        if key == "<":
+            self.livro_linguagens.pagina_anterior
+        elif key == ">":
+            self.livro_linguagens.proxima_pagina
+
+        try:
+            num_key = int(key) - 1
+            if self.livro_linguagens.numero_itens > num_key > -1:
+                self.info_terminal_linguagens = self.livro_linguagens.itens_pagina[num_key]
+                self.painel_atual = self.chts
+        except:
+            pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def chts(self):
+        self.nome_painel_atual = "Terminal: chts"
+        self.info_terminal_chts = ""
+        chts = []
+        espacos = "\n" * (9 - self.livro_chts.numero_itens)
+        chts = [f"{i} | {cht:.23}\n" for i, cht in enumerate(self.livro_chts.itens_pagina, 1)]
+        chts[-1] = chts[-1].replace("\n", "")
+        chts = "".join(chts)
+        painel = Panel(f"""{self.logo}\n{chts}{espacos}""")
+        return painel
+
+    def comandos_chts(self, key):
+        if key == "<":
+            self.livro_chts.pagina_anterior
+        elif key == ">":
+            self.livro_chts.proxima_pagina
+
+        try:
+            num_key = int(key) - 1
+            if self.livro_chts.numero_itens > num_key > -1:
+                self.info_terminal_chts = self.livro_chts.itens_pagina[num_key]
                 self.painel_atual = self.info_terminal
         except:
             pass
