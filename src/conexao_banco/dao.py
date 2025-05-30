@@ -72,6 +72,29 @@ class DAO():
             if self.connection.is_connected:
                 self.connection.close()
 
+    def deletar(self, tabela: str, where: str, valor_dados: tuple):
+        try:
+            sql = f"DELETE FROM {tabela} WHERE {where}"
+            sc0 = "SET FOREIGN_KEY_CHECKS=0"
+            sc1 = "SET FOREIGN_KEY_CHECKS=1"
+
+            self.cursor.execute(sc0)
+            self.cursor.execute(sql, valor_dados)
+            self.cursor.execute(sc1)
+
+            self.connection.commit()
+            self.cursor.close()
+
+        except Error as e:
+            print()
+            print(f"*ERRO! {e.msg}")
+            print()
+            print("- - - - - - - - - - - - - - - - - - - - - - ")
+            print()
+        finally:
+            if self.connection.is_connected:
+                self.connection.close()
+
 
 # EXEMPLOS:
 

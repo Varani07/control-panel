@@ -6,7 +6,6 @@ import psutil
 import shutil
 import time
 import os, sys, termios, tty 
-import re
 
 from ..util import computer_info, icons, terminal_interactions
 from .livro import Livro
@@ -17,6 +16,9 @@ class Interface():
     def __init__(self):
         self.nome_painel_atual = ""
         self.painel_atual = self.info_principal
+        self.pag_mode = False
+
+        self.ip = "192.168.0.14/24"
 
         self.info_terminal_projetos = ""
         self.info_terminal_conda_env = ""
@@ -32,16 +34,21 @@ class Interface():
         self.info_processos_pausados = False
         self.info_processos_filtro = "memoria"
 
-        self.logo = " "*12 + ""
-
         self.livro_projetos = Livro("Projetos")
         self.livro_projetos.adicionar_conteudo(["control-panel", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles", "applications"]) 
+
+        self.wallpapers_dict = {"Black Screen": "3162080199", "Maka Albarn": "2235368643", "Hu Tao": "3288556868", "One Piece": "2592186084", "Dangan Train": "2960810177", "Anime Girl": "1548634999", "Grace - orange": "3302288165", "Yamato": "2873476171", "Stardust Sky": "3000931940", "Colorful Girl": "3260370312", "Amadeus": "2842174772", "Anime Girl - white": "3304382950", "Ayanami Rei - night": "3258032485", "Noragami": "2822531788", "Steins Gate": "2857814403", "Saihara Shuichi": "1587283090", "Dangan Trigger": "2018250661", "Nagito": "2859605707", "Makise Kurisu": "3307110665", "Purple Nywz": "3249042667", "Car Seat Headrest": "1927545570", "Albedo": "3413447654", "Albedo - gif": "1440015815", "Gurren Lagan": "899193283", "Luffy & Yamato Cutscene": "2799259243", "Yano Battle Cutscene": "2915598509", "V3 Cutscene": "841038705", "Danganronpa 1 Opening": "844831603", "Danganronpa 2 Opening": "844847126", "Danganronpa 3 Opening": "948561789", "Monokuma": "982768639"}
+        self.livro_wallpapers = Livro("Wallpapers")
+        self.livro_wallpapers.adicionar_conteudo([key for key in self.wallpapers_dict.keys()])
+        self.wallpapers_on = False
+
+        self.livro_ips = Livro("Ips")
 
         self.livro_envs = Livro("Environment")
         self.livro_envs.adicionar_conteudo(["control_panel_env", "ponto_ecosocial_env", "usina_env"])
 
         self.livro_programas = Livro("Programas")
-        self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "Speed Test", "NewsBoat", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
+        self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "Speed Test", "NewsBoat", "Ver IP", "Btop", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
 
         self.livro_animes = Livro("Animes")
         self.livro_animes.adicionar_conteudo(["One Piece", "Re: Zero", "Tower Of God"])
@@ -53,7 +60,7 @@ class Interface():
         self.livro_chts.adicionar_conteudo(["for"])
 
         self.livro_help = Livro("Help")
-        self.livro_help.adicionar_conteudo(["[Geral]", "r | Conexoes", "p | Processos", "m | Menu Principal", "t | Terminal", "a | Apps", "< | Pagina Anterior", "> | Proxima Pagina", "d | Desligar", "q | Sair", "", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "W | Conectar Wifi", "", "[Processos]", "P | pause/play", "Funciona fora do pause:", "C | Filtrar por cpu%", "M | Filtrar por memoria%", "Funciona em pause:", "< | Pagina Anterior", "> | Proxima Pagina", "<num> | Mata/Termina o processo"])
+        self.livro_help.adicionar_conteudo(["[Geral]", "r | Conexoes", "p | Processos", "m | Menu Principal", "w | Wallpapers", "t | Terminal", "a | Apps", "i | IP's", "d | Sistema", "q | Sair", "< | Pagina Anterior", "> | Proxima Pagina", "", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "", "[Processos]", "P | pause/play", "Funciona fora do pause:", "C | Filtrar por cpu%", "M | Filtrar por memoria%", "Funciona em pause:", "< | Pagina Anterior", "> | Proxima Pagina", "<num> | Mata/Termina o processo"])
 
         self.livro_processos = Livro("Processos")
         self.livro_processos.adicionar_conteudo(computer_info.get_processes(self.info_processos_filtro))
@@ -62,7 +69,15 @@ class Interface():
         self.livro_desligar.adicionar_conteudo(["Screen Lock", "Suspender", "Reboot", "Desligar"])
 
         self.livro_apps = Livro("Apps")
-        self.livro_apps.adicionar_conteudo(["Firefox", "Discord", "Obsidian", "Komikku", "Steam", "Heroic", "Bitwarden", "Pav", "Calendario", "Code", "Xed", "Btop", "Psensor", "BleachBit", "EasyEffecs", "Evolution", "Raspberry Pi Imager"])
+        self.livro_apps.adicionar_conteudo(["Firefox", "Discord", "Obsidian", "Komikku", "Steam", "Stremio", "Heroic", "Bitwarden", "Pav", "Parsec", "Calendario", "Code", "Xed", "Psensor", "BleachBit", "EasyEffecs", "Evolution", "Raspberry Pi Imager"])
+
+    @property
+    def logo(self):
+        if self.pag_mode:
+            valores = ("p", 11)
+        else:
+            valores = ("", 12)
+        return f"{valores[0]}{' ' * valores[1]}{' ' * 9}"
 
     def monitoramento_tela_principal(self):
         self.fd = sys.stdin.fileno()
@@ -117,14 +132,16 @@ class Interface():
                         self.comandos_games(key)
                     elif self.nome_painel_atual == "Conexoes: achar bluetooth":
                         self.comandos_achar_bluetooth(key)
-                    elif self.nome_painel_atual == "Conexoes: achar wifi":
-                        self.comandos_achar_wifi(key, live)
                     elif self.nome_painel_atual == "Terminal: animes":
                         self.comandos_animes(key)
                     elif self.nome_painel_atual == "Terminal: linguagens":
                         self.comandos_linguagens(key)
                     elif self.nome_painel_atual == "Terminal: chts":
                         self.comandos_chts(key)
+                    elif self.nome_painel_atual == "Ips":
+                        self.comandos_ips(key)
+                    elif self.nome_painel_atual == "Wallpapers":
+                        self.comandos_wallpapers(key, self.livro_wallpapers)
         finally:
             termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
             os.system("clear")
@@ -150,6 +167,14 @@ class Interface():
         elif key == "a":
             self.painel_atual = self.info_apps
             return True
+        elif key == "i":
+            self.livro_ips = Livro("Ips")
+            self.livro_ips.adicionar_conteudo(computer_info.scan_network_nmap(self.ip))
+            self.painel_atual = self.info_ips
+            return True
+        elif key == "w":
+            self.painel_atual = self.info_wallpapers
+            return True
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -160,19 +185,30 @@ class Interface():
         comandos = [f"{comando:.27}" + "\n" for comando in self.livro_help.itens_pagina]
         comandos[-1] = comandos[-1].replace("\n", "")
         comandos = "".join(comandos)
-        help_panel = Panel(f"""{self.logo}
+        help_panel = Panel(f"""{self.logo}{str(self.livro_help.pagina_atual)}/{str(self.livro_help.numero_de_paginas)}
 {comandos}{espacos}                           """)
         return help_panel
 
     def comandos_help(self, key):
-        if key == "<":
-            self.livro_help.pagina_anterior
-        elif key == ">":
-            self.livro_help.proxima_pagina
+        if key == "s":
+            self.pag_mode = not self.pag_mode
+
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_help.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_help.pagina_anterior
+            elif key == ">":
+                self.livro_help.proxima_pagina
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     def info_principal(self):
+        self.pag_mode = False
         self.nome_painel_atual = "Menu Principal"
 
         cpu = psutil.cpu_percent()
@@ -200,6 +236,7 @@ class Interface():
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     def info_conexoes(self):
+        self.pag_mode = False
         self.nome_painel_atual = "Conexoes"
         linhas = len(computer_info.get_connected_bt_devices())
         devices = ""
@@ -236,10 +273,6 @@ class Interface():
             self.livro_find_bluetooth = Livro("Pare Devices")
             self.livro_find_bluetooth.adicionar_conteudo(computer_info.scan_discoverable_devices(5))
             self.painel_atual = self.achar_bluetooth
-        elif key == "W":
-            self.livro_find_wifi = Livro("Connect Wifi")
-            self.livro_find_wifi.adicionar_conteudo(computer_info.scan_wifi_networks())
-            self.painel_atual = self.achar_wifi
     
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -254,69 +287,39 @@ class Interface():
         else:
             espacos = "\n" * (7 - self.livro_find_bluetooth.numero_itens)
             devices = "[red]Nenhum Dispositivo Encontrado[/]"
-        painel = Panel(f"""{self.logo}\n{devices}{espacos}""")
+        painel = Panel(f"""{self.logo}{str(self.livro_find_bluetooth.pagina_atual)}/{str(self.livro_find_bluetooth.numero_de_paginas)}\n{devices}{espacos}""")
         return painel
 
     def comandos_achar_bluetooth(self, key):
-        if key == "<":
-            self.livro_find_bluetooth.pagina_anterior
-        elif key == ">":
-            self.livro_find_bluetooth.proxima_pagina
+        if key == "s":
+            self.pag_mode = not self.pag_mode
 
-        try:
-            num_key = int(key) - 1
-            if self.livro_find_bluetooth.numero_itens > num_key > -1:
-                if self.livro_find_bluetooth.nome_livro == "Connect Devices":
-                    computer_info.connect_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
-                if self.livro_find_bluetooth.nome_livro == "Disconnect Devices":
-                    computer_info.disconnect_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
-                if self.livro_find_bluetooth.nome_livro == "Remove Devices":
-                    computer_info.remove_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
-                if self.livro_find_bluetooth.nome_livro == "Pare Devices":
-                    computer_info.pair_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
-                self.painel_atual = self.info_conexoes
-        except:
-            pass
-
-# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    def achar_wifi(self):
-        self.nome_painel_atual = "Conexoes: achar wifi"
-        devices = []
-        if self.livro_find_wifi.numero_itens > 0:
-            espacos = "\n" * (9 - self.livro_find_wifi.numero_itens)
-            redes = [f"{i} | {rede.split('|')[1]:.23}\n" for i, rede in enumerate(self.livro_find_wifi.itens_pagina, 1)]
-            redes[-1] = redes[-1].replace("\n", "")
-            redes = "".join(redes)
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_find_bluetooth.mudar_pagina(num_key)
+            except:
+                pass
         else:
-            espacos = "\n" * (7 - self.livro_find_wifi.numero_itens)
-            redes = "[red]Nenhuma Rede Encontrada[/]"
-        painel = Panel(f"""{self.logo}\n{redes}{espacos}""")
-        return painel
+            if key == "<":
+                self.livro_find_bluetooth.pagina_anterior
+            elif key == ">":
+                self.livro_find_bluetooth.proxima_pagina
 
-    def comandos_achar_wifi(self, key, live):
-        if key == "<":
-            self.livro_find_wifi.pagina_anterior
-        elif key == ">":
-            self.livro_find_wifi.proxima_pagina
-
-        try:
-            num_key = int(key) - 1
-            if self.livro_find_wifi.numero_itens > num_key > -1:
-                ssid = re.sub(r"\\+", "", self.livro_find_wifi.itens_pagina[num_key].split("|")[1])
-                if self.livro_find_wifi.nome_livro == "Connect Wifi":
-                    live.stop()
-                    os.system("clear")
-                    termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
-                    password = console.input("password: ")
-                    os.system("clear")
-                    tty.setcbreak(self.fd)
-                    live.start()
-                    computer_info.connect_wifi(ssid, password)
+            try:
+                num_key = int(key) - 1
+                if self.livro_find_bluetooth.numero_itens > num_key > -1:
+                    if self.livro_find_bluetooth.nome_livro == "Connect Devices":
+                        computer_info.connect_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
+                    if self.livro_find_bluetooth.nome_livro == "Disconnect Devices":
+                        computer_info.disconnect_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
+                    if self.livro_find_bluetooth.nome_livro == "Remove Devices":
+                        computer_info.remove_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
+                    if self.livro_find_bluetooth.nome_livro == "Pare Devices":
+                        computer_info.pair_device(self.livro_find_bluetooth.itens_pagina[num_key].split("|")[0])
                     self.painel_atual = self.info_conexoes
-
-        except:
-            pass
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -333,47 +336,58 @@ class Interface():
         processos[-1] = processos[-1].replace("\n", "")
         processos = "".join(processos)
 
-        painel_processos = Panel(f"""{self.logo}\n{processos}{espacos}""")
+        painel_processos = Panel(f"""{self.logo}{str(self.livro_processos.pagina_atual)}/{str(self.livro_processos.numero_de_paginas)}\n{processos}{espacos}""")
         return painel_processos
 
     def comandos_processos(self, key, live):
-        if key == "P":
-            self.info_processos_pausados = not self.info_processos_pausados
-        elif key == "M" and not self.info_processos_pausados:
-            self.info_processos_filtro = "memoria"
-        elif key == "C" and not self.info_processos_pausados:
-            self.info_processos_filtro = "cpu"
-        elif key =="<" and self.info_processos_pausados:
-            self.livro_processos.pagina_anterior
-        elif key == ">" and self.info_processos_pausados:
-            self.livro_processos.proxima_pagina
+        if key == "s" and self.info_processos_pausados:
+            self.pag_mode = not self.pag_mode
 
-        if self.info_processos_pausados:
+        if self.pag_mode:
             try:
-                num_key = int(key) - 1
-                if self.livro_processos.numero_itens > num_key > -1:
-                    live.stop()
-                    os.system("clear")
-                    termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
-                    escolha = console.input("0 - Voltar\n1 - Terminate Process\n2 - Kill Process\n\nEscolha: ")
-                    os.system("clear")
-                    tty.setcbreak(self.fd)
-                    live.start()
-                    if escolha == "1":
-                        computer_info.terminate_process(int(self.livro_processos.itens_pagina[num_key].info['pid']))
-                        self.info_processos_pausados = False
-                    elif escolha == "2":
-                        computer_info.kill_process(int(self.livro_processos.itens_pagina[num_key].info['pid']))
-                        self.info_processos_pausados = False
-                    else:
-                        pass
-
+                num_key = int(key)
+                self.livro_processos.mudar_pagina(num_key)
             except:
                 pass
+        else:
+            if key == "P":
+                self.info_processos_pausados = not self.info_processos_pausados
+            elif key == "M" and not self.info_processos_pausados:
+                self.info_processos_filtro = "memoria"
+            elif key == "C" and not self.info_processos_pausados:
+                self.info_processos_filtro = "cpu"
+            elif key =="<" and self.info_processos_pausados:
+                self.livro_processos.pagina_anterior
+            elif key == ">" and self.info_processos_pausados:
+                self.livro_processos.proxima_pagina
+
+            if self.info_processos_pausados:
+                try:
+                    num_key = int(key) - 1
+                    if self.livro_processos.numero_itens > num_key > -1:
+                        live.stop()
+                        os.system("clear")
+                        termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
+                        escolha = console.input(f"0 - Voltar\n1 - Terminate Process\n2 - Kill Process\n\nPid: {self.livro_processos.itens_pagina[num_key].info['pid']}\n{self.livro_processos.itens_pagina[num_key].info['name']}\n\nEscolha: ")
+                        os.system("clear")
+                        tty.setcbreak(self.fd)
+                        live.start()
+                        if escolha == "1":
+                            computer_info.terminate_process(int(self.livro_processos.itens_pagina[num_key].info['pid']))
+                            self.info_processos_pausados = False
+                        elif escolha == "2":
+                            computer_info.kill_process(int(self.livro_processos.itens_pagina[num_key].info['pid']))
+                            self.info_processos_pausados = False
+                        else:
+                            pass
+
+                except:
+                    pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     def info_terminal(self):
+        self.pag_mode = False
         self.nome_painel_atual = "Terminal"
         espacos = "\n" * 1
         reset = "[red]Resetar - Shift + D[/]"
@@ -409,10 +423,14 @@ class Interface():
                     comandos.append("super_update")
                 elif self.info_terminal_programas == "Interface Git":
                     comandos.append("lg")
+                elif self.info_terminal_programas == "Ver IP":
+                    comandos.append("ip -4 addr show dev wlan0")
                 elif self.info_terminal_programas == "Tree":
                     comandos.append("tree")
                 elif self.info_terminal_programas == "NewsBoat":
                     comandos.append("nb")
+                elif self.info_terminal_programas == "Btop":
+                    comandos.append("btop")
                 elif self.info_terminal_programas == "Espaco Livre":
                     comandos.append("duf")
                 elif self.info_terminal_programas == "TimeShift":
@@ -454,22 +472,32 @@ class Interface():
         diretorios = [f"{i} | {diretorio:.23}" + "\n" for i, diretorio in enumerate(self.livro_projetos.itens_pagina, 1)]
         diretorios[-1] = diretorios[-1].replace("\n", "")
         diretorios = "".join(diretorios)
-        painel = Panel(f"""{self.logo}
+        painel = Panel(f"""{self.logo}{str(self.livro_projetos.pagina_atual)}/{str(self.livro_projetos.numero_de_paginas)}
 {diretorios}{espacos}      """)
         return painel
 
     def comandos_terminal_projetos(self, key):
-        if key == "<":
-            self.livro_projetos.pagina_anterior
-        elif key == ">":
-            self.livro_projetos.proxima_pagina
-        try: 
-            num_key = int(key) - 1
-            if self.livro_projetos.numero_itens > num_key > -1:
-                self.info_terminal_projetos = self.livro_projetos.itens_pagina[num_key]
-                self.painel_atual = self.info_terminal
-        except:
-            pass
+        if key == "s":
+            self.pag_mode = not self.pag_mode
+
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_projetos.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_projetos.pagina_anterior
+            elif key == ">":
+                self.livro_projetos.proxima_pagina
+            try: 
+                num_key = int(key) - 1
+                if self.livro_projetos.numero_itens > num_key > -1:
+                    self.info_terminal_projetos = self.livro_projetos.itens_pagina[num_key]
+                    self.painel_atual = self.info_terminal
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -481,22 +509,32 @@ class Interface():
         envs = [f"{i} | {env:.23}" + "\n" for i, env in enumerate(self.livro_envs.itens_pagina, 1)]
         envs[-1] = envs[-1].replace("\n", "")
         envs = "".join(envs)
-        painel = Panel(f"""{self.logo}
+        painel = Panel(f"""{self.logo}{str(self.livro_envs.pagina_atual)}/{str(self.livro_envs.numero_de_paginas)}
 {envs}{espacos}      """)
         return painel
 
     def comandos_terminal_conda_env(self, key):
-        if key == "<":
-            self.livro_envs.pagina_anterior
-        elif key ==">":
-            self.livro_envs.proxima_pagina
-        try:
-            num_key = int(key) - 1
-            if self.livro_envs.numero_itens > num_key > -1:
-                self.info_terminal_conda_env = self.livro_envs.itens_pagina[num_key]
-                self.painel_atual = self.info_terminal
-        except:
-            pass
+        if key == "s":
+            self.pag_mode = not self.pag_mode
+
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_envs.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_envs.pagina_anterior
+            elif key ==">":
+                self.livro_envs.proxima_pagina
+            try:
+                num_key = int(key) - 1
+                if self.livro_envs.numero_itens > num_key > -1:
+                    self.info_terminal_conda_env = self.livro_envs.itens_pagina[num_key]
+                    self.painel_atual = self.info_terminal
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -508,22 +546,32 @@ class Interface():
         programas = [f"{i} | {programa:.23}" + "\n" for i, programa in enumerate(self.livro_programas.itens_pagina, 1)]
         programas[-1] = programas[-1].replace("\n", "")
         programas = "".join(programas)
-        painel = Panel(f"""{self.logo}
+        painel = Panel(f"""{self.logo}{str(self.livro_programas.pagina_atual)}/{str(self.livro_programas.numero_de_paginas)}
 {programas}{espacos}                       """)
         return painel
 
     def comandos_terminal_programas(self, key):
-        if key == "<":
-            self.livro_programas.pagina_anterior
-        elif key == ">":
-            self.livro_programas.proxima_pagina
-        try:
-            num_key = int(key) - 1
-            if self.livro_programas.numero_itens > num_key > -1:
-                self.info_terminal_programas = self.livro_programas.itens_pagina[num_key]
-                self.painel_atual = self.info_terminal
-        except:
-            pass
+        if key == "s":
+            self.pag_mode = not self.pag_mode
+
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_programas.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_programas.pagina_anterior
+            elif key == ">":
+                self.livro_programas.proxima_pagina
+            try:
+                num_key = int(key) - 1
+                if self.livro_programas.numero_itens > num_key > -1:
+                    self.info_terminal_programas = self.livro_programas.itens_pagina[num_key]
+                    self.painel_atual = self.info_terminal
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -535,22 +583,32 @@ class Interface():
         animes = [f"{i} | {anime:.23}\n" for i, anime in enumerate(self.livro_animes.itens_pagina, 1)]
         animes[-1] = animes[-1].replace("\n", "")
         animes = "".join(animes)
-        painel = Panel(f"""{self.logo}\n{animes}{espacos}""")
+        painel = Panel(f"""{self.logo}{str(self.livro_animes.pagina_atual)}/{str(self.livro_animes.numero_de_paginas)}\n{animes}{espacos}""")
         return painel
 
     def comandos_animes(self, key):
-        if key == "<":
-            self.livro_animes.pagina_anterior
-        elif key == ">":
-            self.livro_animes.proxima_pagina
+        if key == "s":
+            self.pag_mode = not self.pag_mode
 
-        try:
-            num_key = int(key) - 1
-            if self.livro_animes.numero_itens > num_key > -1:
-                self.info_terminal_animes = self.livro_animes.itens_pagina[num_key]
-                self.painel_atual = self.info_terminal
-        except:
-            pass
+        if self.pag_mode:
+            try: 
+                num_key = int(key)
+                self.livro_animes.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_animes.pagina_anterior
+            elif key == ">":
+                self.livro_animes.proxima_pagina
+
+            try:
+                num_key = int(key) - 1
+                if self.livro_animes.numero_itens > num_key > -1:
+                    self.info_terminal_animes = self.livro_animes.itens_pagina[num_key]
+                    self.painel_atual = self.info_terminal
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -563,22 +621,32 @@ class Interface():
         linguagens = [f"{i} | {linguagem:.23}\n" for i, linguagem in enumerate(self.livro_linguagens.itens_pagina, 1)]
         linguagens[-1] = linguagens[-1].replace("\n", "")
         linguagens = "".join(linguagens)
-        painel = Panel(f"""{self.logo}\n{linguagens}{espacos}""")
+        painel = Panel(f"""{self.logo}{str(self.livro_linguagens.pagina_atual)}/{str(self.livro_linguagens.numero_de_paginas)}\n{linguagens}{espacos}""")
         return painel
 
     def comandos_linguagens(self, key):
-        if key == "<":
-            self.livro_linguagens.pagina_anterior
-        elif key == ">":
-            self.livro_linguagens.proxima_pagina
+        if key == "s":
+            self.pag_mode = not self.pag_mode
 
-        try:
-            num_key = int(key) - 1
-            if self.livro_linguagens.numero_itens > num_key > -1:
-                self.info_terminal_linguagens = self.livro_linguagens.itens_pagina[num_key]
-                self.painel_atual = self.chts
-        except:
-            pass
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_linguagens.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_linguagens.pagina_anterior
+            elif key == ">":
+                self.livro_linguagens.proxima_pagina
+
+            try:
+                num_key = int(key) - 1
+                if self.livro_linguagens.numero_itens > num_key > -1:
+                    self.info_terminal_linguagens = self.livro_linguagens.itens_pagina[num_key]
+                    self.painel_atual = self.chts
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -590,22 +658,32 @@ class Interface():
         chts = [f"{i} | {cht:.23}\n" for i, cht in enumerate(self.livro_chts.itens_pagina, 1)]
         chts[-1] = chts[-1].replace("\n", "")
         chts = "".join(chts)
-        painel = Panel(f"""{self.logo}\n{chts}{espacos}""")
+        painel = Panel(f"""{self.logo}{str(self.livro_chts.pagina_atual)}/{str(self.livro_chts.numero_de_paginas)}\n{chts}{espacos}""")
         return painel
 
     def comandos_chts(self, key):
-        if key == "<":
-            self.livro_chts.pagina_anterior
-        elif key == ">":
-            self.livro_chts.proxima_pagina
+        if key == "s":
+            self.pag_mode = not self.pag_mode
 
-        try:
-            num_key = int(key) - 1
-            if self.livro_chts.numero_itens > num_key > -1:
-                self.info_terminal_chts = self.livro_chts.itens_pagina[num_key]
-                self.painel_atual = self.info_terminal
-        except:
-            pass
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_chts.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_chts.pagina_anterior
+            elif key == ">":
+                self.livro_chts.proxima_pagina
+
+            try:
+                num_key = int(key) - 1
+                if self.livro_chts.numero_itens > num_key > -1:
+                    self.info_terminal_chts = self.livro_chts.itens_pagina[num_key]
+                    self.painel_atual = self.info_terminal
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -616,34 +694,44 @@ class Interface():
         opcoes = [f"{i} | {opcao:.23}\n" for i, opcao in enumerate(self.livro_desligar.itens_pagina, 1)]
         opcoes[-1] = opcoes[-1].replace("\n", "")
         opcoes = "".join(opcoes)
-        painel = Panel(f"""{self.logo}
+        painel = Panel(f"""{self.logo}{str(self.livro_desligar.pagina_atual)}/{str(self.livro_desligar.numero_de_paginas)}
 {opcoes}{espacos}                       """)
         return painel
 
     def comandos_desligar(self, key):
-        if key == "<":
-            self.livro_desligar.pagina_anterior
-        elif key == ">":
-            self.livro_desligar.proxima_pagina
+        if key == "s":
+            self.pag_mode = not self.pag_mode
 
-        try:
-            num_key = int(key) - 1
-            if self.livro_desligar.numero_itens > num_key > -1:
-                escolha = self.livro_desligar.itens_pagina[num_key]
-                commands = []
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_desligar.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_desligar.pagina_anterior
+            elif key == ">":
+                self.livro_desligar.proxima_pagina
 
-                if escolha == "Reboot":
-                    commands.append("systemctl reboot")
-                elif escolha == "Desligar":
-                    commands.append("systemctl poweroff")
-                elif escolha == "Suspender":
-                    commands.append("systemctl suspend")
-                elif escolha == "Screen Lock":
-                    commands.append("swaylock -i ~/meu_universo/Fotos/Wallpapers/anime_girl.jpg")
-                    
-                terminal_interactions.open_kitty_with_commands("~", commands)
-        except:
-            pass
+            try:
+                num_key = int(key) - 1
+                if self.livro_desligar.numero_itens > num_key > -1:
+                    escolha = self.livro_desligar.itens_pagina[num_key]
+                    commands = []
+
+                    if escolha == "Reboot":
+                        commands.append("systemctl reboot")
+                    elif escolha == "Desligar":
+                        commands.append("systemctl poweroff")
+                    elif escolha == "Suspender":
+                        commands.append("systemctl suspend")
+                    elif escolha == "Screen Lock":
+                        commands.append("swaylock -i ~/meu_universo/Fotos/Wallpapers/anime_girl.jpg")
+                        
+                    terminal_interactions.open_kitty_with_commands("~", commands)
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -657,67 +745,82 @@ class Interface():
         apps = [f"{i} | {app:.23}\n" for i, app in enumerate(self.livro_apps.itens_pagina, 1)]
         apps[-1] = apps[-1].replace("\n", "")
         apps = "".join(apps)
-        painel = Panel(f"""{self.logo}
+        painel = Panel(f"""{self.logo}{str(self.livro_apps.pagina_atual)}/{str(self.livro_apps.numero_de_paginas)}
 {apps}{espacos}                       """)
         return painel
 
     def comandos_apps(self, key):
-        if key == "<":
-            self.livro_apps.pagina_anterior
-        elif key == ">":
-            self.livro_apps.proxima_pagina
+        if key == "s":
+            self.pag_mode = not self.pag_mode
 
-        try:
-            num_key = int(key) - 1
-            if self.livro_apps.numero_itens > num_key > -1:
-                escolha = self.livro_apps.itens_pagina[num_key]
-                commands = ""
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_apps.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_apps.pagina_anterior
+            elif key == ">":
+                self.livro_apps.proxima_pagina
 
-                if escolha == "Firefox":
-                    commands = "/usr/lib/firefox/firefox"
-                elif escolha == "Discord":
-                    commands = "/usr/bin/discord"
-                elif escolha == "Komikku":
-                    commands = "/usr/bin/komikku"
-                elif escolha == "Obsidian":
-                    commands = "/usr/bin/obsidian"
-                elif escolha == "Bitwarden":
-                    commands = "bitwarden-desktop"
-                elif escolha == "Pav":
-                    commands = "pavucontrol"
-                elif escolha == "Xed":
-                    commands = "xed"
-                elif escolha == "Psensor":
-                    commands = "psensor"
-                elif escolha == "Code":
-                    commands = "code-oss"
-                elif escolha == "BleachBit":
-                    commands = "bleachbit"
-                elif escolha == "Calendario":
-                    commands = "gnome-calendar"
-                elif escolha == "Btop":
-                    commands = "btop"
-                elif escolha == "Evolution":
-                    commands = "evolution"
-                elif escolha == "EasyEffects":
-                    commands = "easyeffects"
-                elif escolha == "Raspberry Pi Imager":
-                    commands = "rpi-imager"
+            try:
+                num_key = int(key) - 1
+                if self.livro_apps.numero_itens > num_key > -1:
+                    escolha = self.livro_apps.itens_pagina[num_key]
+                    commands = ""
 
-                if escolha == "Steam":
-                    self.info_apps_launcher = "steam"
-                    self.painel_atual = self.games
-                elif escolha == "Heroic":
-                    self.info_apps_launcher = "heroic"
-                    self.painel_atual = self.games
-                else:
-                    terminal_interactions.launch_app(commands, False)
-        except:
-            pass
+                    if escolha == "Firefox":
+                        commands = "/usr/lib/firefox/firefox"
+                    elif escolha == "Discord":
+                        commands = "/usr/bin/discord"
+                    elif escolha == "Komikku":
+                        commands = "/usr/bin/komikku"
+                    elif escolha == "Obsidian":
+                        commands = "/usr/bin/obsidian"
+                    elif escolha == "Bitwarden":
+                        commands = "bitwarden-desktop"
+                    elif escolha == "Stremio":
+                        commands = "flatpak run com.stremio.Stremio"
+                    elif escolha == "Parsec":
+                        commands = "flatpak run com.parsecgaming.parsec"
+                    elif escolha == "Pav":
+                        commands = "pavucontrol"
+                    elif escolha == "Xed":
+                        commands = "xed"
+                    elif escolha == "Psensor":
+                        commands = "psensor"
+                    elif escolha == "Code":
+                        commands = "code-oss"
+                    elif escolha == "BleachBit":
+                        commands = "bleachbit"
+                    elif escolha == "Calendario":
+                        commands = "gnome-calendar"
+                    elif escolha == "Btop":
+                        commands = "btop"
+                    elif escolha == "Evolution":
+                        commands = "evolution"
+                    elif escolha == "EasyEffects":
+                        commands = "easyeffects"
+                    elif escolha == "Raspberry Pi Imager":
+                        commands = "rpi-imager"
+
+                    if escolha == "Steam":
+                        self.info_apps_launcher = "steam"
+                        self.painel_atual = self.games
+                    elif escolha == "Heroic":
+                        self.info_apps_launcher = "heroic"
+                        self.painel_atual = self.games
+                    else:
+                        terminal_interactions.launch_app(commands, False)
+            except:
+                pass
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     def games(self):
+        self.pag_mode = False
         self.nome_painel_atual = "Apps: games"
         if not self.info_apps_ver_painel:
             ver_painel = f"[red]Ativar o Painel[/]"
@@ -763,3 +866,75 @@ class Interface():
                 self.info_apps_ver_painel = not self.info_apps_ver_painel
         except:
             pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def info_ips(self):
+        self.nome_painel_atual = "Ips"
+        ips = []
+        espacos = "\n" * (9 - self.livro_ips.numero_itens)
+        ips = [f"{i} | {ip}\n" for i, ip in enumerate(self.livro_ips.itens_pagina, 1)]
+        ips[-1] = ips[-1].replace("\n", "")
+        ips = "".join(ips)
+        painel = Panel(f"""{self.logo}{str(self.livro_ips.pagina_atual)}/{str(self.livro_ips.numero_de_paginas)}\n{ips}{espacos}""")
+        return painel
+
+    def comandos_ips(self, key):
+        if key == "s":
+            self.pag_mode = not self.pag_mode
+
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_ips.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                self.livro_ips.pagina_anterior
+            elif key == ">":
+                self.livro_ips.proxima_pagina
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    def info_wallpapers(self):
+        self.nome_painel_atual = "Wallpapers"
+        espacos = "\n" * (9 - self.livro_wallpapers.numero_itens)
+        wallpapers = [f"{i} | {wallpaper:.23}\n" for i, wallpaper in enumerate(self.livro_wallpapers.itens_pagina, 1)]
+        wallpapers[-1] = wallpapers[-1].replace("\n", "")
+        wallpapers = "".join(wallpapers)
+        painel = Panel(f"""{self.logo}{str(self.livro_wallpapers.pagina_atual)}/{str(self.livro_wallpapers.numero_de_paginas)}\n{wallpapers}{espacos}""")
+        return painel
+
+    def comandos_wallpapers(self, key: str, livro: Livro):
+        if key == "s":
+            self.pag_mode = not self.pag_mode
+
+        if self.pag_mode:
+            try:
+                num_key = int(key)
+                self.livro_wallpapers.mudar_pagina(num_key)
+            except:
+                pass
+        else:
+            if key == "<":
+                livro.pagina_anterior
+            elif key == ">":
+                livro.proxima_pagina
+
+            try:
+                num_key = int(key) - 1
+                if livro.numero_itens > num_key > -1:
+                    id_wallpaper = self.wallpapers_dict[livro.itens_pagina[num_key]]
+                    if self.wallpapers_on:
+                        command = "killall linux-wallpaperengine"
+                        self.wallpapers_on = not self.wallpapers_on
+                    else:
+                        command = "linux-wallpaperengine --scaling fill --screen-root eDP-1 --bg " + id_wallpaper
+                        self.wallpapers_on = not self.wallpapers_on
+                    terminal_interactions.launch_app(command, False)
+
+            except:
+                pass
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------

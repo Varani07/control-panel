@@ -18,6 +18,13 @@ class Livro():
                 pagina += 1
         self.numero_de_paginas = len(self.paginas.keys())
 
+    def mudar_pagina(self, pag):
+        try:
+            self.paginas[pag]
+            self.pagina_atual = pag
+        except:
+            pass
+
     @property
     def proxima_pagina(self):
         if self.numero_de_paginas != self.pagina_atual:

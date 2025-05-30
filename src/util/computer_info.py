@@ -4,7 +4,8 @@ from dbus_next.aio import MessageBus
 from dbus_next.constants import BusType
 import heapq
 import time
-import os, shutil, signal
+import os, signal 
+import re
 
 def pegar_chave():
     dr, _, _ = select.select([sys.stdin], [], [], 0)
@@ -246,60 +247,21 @@ def scan_discoverable_devices(scan_duration: float = 5.0) -> list[str]:
 
     return [f"{mac}|{name}" for mac, name in seen.items()]
 
-def scan_wifi_networks() -> list[str]:
-    nmcli = shutil.which('nmcli') or '/usr/bin/nmcli'
-    if not os.path.isfile(nmcli):
-        raise FileNotFoundError(
-            f"nmcli não encontrado em {nmcli}. "
-            "Verifique se o NetworkManager está instalado."
-        )
-
-    out = subprocess.check_output(
-        [nmcli, '-t', '-f', 'BSSID,SSID', 'device', 'wifi', 'list'],
-        text=True
-    )
-    networks = []
-    for line in out.splitlines():
-        if not line:
-            continue
-        # separa EM DUAS PARTES mas do fim pra frente
-        bssid, ssid = line.rsplit(":", 1)
-        networks.append(f"{bssid}|{ssid}")
-    return networks
-
-def _get_wifi_iface() -> str:
-    """Retorna o nome da interface Wi-Fi (ex: wlp3s0)."""
-    nmcli = shutil.which("nmcli") or "/usr/bin/nmcli"
-    out = subprocess.check_output(
-        [nmcli, "-t", "-f", "DEVICE,TYPE", "device"], text=True
-    )
-    for line in out.splitlines():
-        dev, typ = line.split(":", 1)
-        if typ == "wifi":
-            return dev
-    raise RuntimeError("Interface Wi-Fi não encontrada")
-
-def connect_wifi(ssid: str, password: str) -> None:
+def scan_network_nmap(cidr: str) -> list[dict]:
     """
-    Conecta à rede Wi-Fi `ssid` protegida por WPA-PSK `password`.
-    Sempre recria o profile do zero, para não herdar configurações estranhas.
+    Usa `nmap -sn` para descobrir hosts vivos sem precisar de root.
+    Retorna lista de dicts {'ip','hostname'}.
     """
-    nmcli = shutil.which("nmcli") or "/usr/bin/nmcli"
-    iface = _get_wifi_iface()
-
-    # Deleta qualquer profile com o mesmo nome (para evitar conflito)
-    subprocess.run([nmcli, "connection", "delete", ssid], check=False)
-
-    # Cria um novo profile WPA-PSK do zero
-    subprocess.run([
-        nmcli, "connection", "add",
-        "type", "wifi",
-        "ifname", iface,
-        "con-name", ssid,
-        "ssid", ssid,
-        "wifi-sec.key-mgmt", "wpa-psk",
-        "wifi-sec.psk", password
-    ], check=True)
-
-    # Sobe a conexão
-    subprocess.run([nmcli, "connection", "up", ssid], check=True)
+    out = subprocess.check_output(
+        ["nmap", "-sn", cidr],
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
+    devices = []
+    for line in out.splitlines():
+        # linha exemplo: "Nmap scan report for 192.168.1.42 (meu-pc)"
+        m = re.match(r"Nmap scan report for ([\d\.]+)( \((.+)\))?", line)
+        if m:
+            ip = m.group(1)
+            devices.append(ip)
+    return devices
