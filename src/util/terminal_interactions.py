@@ -3,14 +3,14 @@ import subprocess
 import shlex
 
 def open_kitty_with_commands(path, commands):
-    if path == "control-panel" or path == "gerenciamento_usina" or path == "teste_conhecimento_python" or path == "ponto-ecosocial":
-        path = f"~/Documents/repos/{path}"
+    if path == "control-panel" or path == "gerenciamento_usina" or path == "teste_conhecimento_python" or path == "ponto-ecosocial" or path == "magic-survival":
+        path = f"~/Documentos/repos/{path}"
     elif path == "bin" or path == "hypr" or path == "kitty" or path == "nvim" or path == "zsh":
         path = f"~/dotfiles/{path}"
     elif path == "dotfiles":
         path = "~/dotfiles"
     elif path == "repos":
-        path = "~/Documents/repos"
+        path = "~/Documentos/repos"
     elif path == "applications":
         path = "/usr/share/applications"
     else:

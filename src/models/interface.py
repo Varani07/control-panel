@@ -35,7 +35,7 @@ class Interface():
         self.info_processos_filtro = "memoria"
 
         self.livro_projetos = Livro("Projetos")
-        self.livro_projetos.adicionar_conteudo(["control-panel", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles", "applications"]) 
+        self.livro_projetos.adicionar_conteudo(["control-panel", "magic-survival", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles", "applications"]) 
 
         self.wallpapers_dict = {"Black Screen": "3162080199", "Maka Albarn": "2235368643", "Hu Tao": "3288556868", "One Piece": "2592186084", "Dangan Train": "2960810177", "Anime Girl": "1548634999", "Grace - orange": "3302288165", "Yamato": "2873476171", "Stardust Sky": "3000931940", "Colorful Girl": "3260370312", "Amadeus": "2842174772", "Anime Girl - white": "3304382950", "Ayanami Rei - night": "3258032485", "Noragami": "2822531788", "Steins Gate": "2857814403", "Saihara Shuichi": "1587283090", "Dangan Trigger": "2018250661", "Nagito": "2859605707", "Makise Kurisu": "3307110665", "Purple Nywz": "3249042667", "Car Seat Headrest": "1927545570", "Albedo": "3413447654", "Albedo - gif": "1440015815", "Gurren Lagan": "899193283", "Luffy & Yamato Cutscene": "2799259243", "Yano Battle Cutscene": "2915598509", "V3 Cutscene": "841038705", "Danganronpa 1 Opening": "844831603", "Danganronpa 2 Opening": "844847126", "Danganronpa 3 Opening": "948561789", "Monokuma": "982768639"}
         self.livro_wallpapers = Livro("Wallpapers")
@@ -45,10 +45,11 @@ class Interface():
         self.livro_ips = Livro("Ips")
 
         self.livro_envs = Livro("Environment")
-        self.livro_envs.adicionar_conteudo(["control_panel_env", "ponto_ecosocial_env", "usina_env"])
+        self.livro_envs.adicionar_conteudo(["base", "control_panel_env", "ponto_ecosocial_env", "usina_env"])
 
+        self.programas_dict = {"NeoVim": "vim .", "Spotify": "ncspot", "Update": "super_update", "Interface Git": "lazygit", "Python": "python main.py", "Tree": "tree", "Speed Test": "speedtest-cli --secure", "Gerenciar Espaço": "ncdu", "NewsBoat": "newsboat", "Ver IP": "ip -4 addr show dev wlan0", "Btop": "btop", "Espaco Livre": "duf", "TimeShift": "sudo -E timeshift-gtk", "Git Status": "of", "Pokemon": "pk", "Aquario": "asciiquarium", "Docs": "devdocs-desktop", "TUTUTUTUT": "cava", "Nvidia GPU Usage": "watch nvidia-smi"}
         self.livro_programas = Livro("Programas")
-        self.livro_programas.adicionar_conteudo(["NeoVim", "Spotify", "Update", "Interface Git", "Tree", "Speed Test", "NewsBoat", "Ver IP", "Btop", "Espaco Livre", "TimeShift", "Git Status", "Pokemon", "Aquario", "Documentacao", "Matrix", "TUTUTUTUT"])
+        self.livro_programas.adicionar_conteudo([key for key in self.programas_dict.keys()])
 
         self.livro_animes = Livro("Animes")
         self.livro_animes.adicionar_conteudo(["One Piece", "Re: Zero", "Tower Of God"])
@@ -57,7 +58,7 @@ class Interface():
         self.livro_linguagens.adicionar_conteudo(["python"])
 
         self.livro_chts = Livro("Cheat Sheets")
-        self.livro_chts.adicionar_conteudo(["for"])
+        self.livro_chts.adicionar_conteudo(["for", "append", "list"])
 
         self.livro_help = Livro("Help")
         self.livro_help.adicionar_conteudo(["[Geral]", "r | Conexoes", "p | Processos", "m | Menu Principal", "w | Wallpapers", "t | Terminal", "a | Apps", "i | IP's", "d | Sistema", "q | Sair", "< | Pagina Anterior", "> | Proxima Pagina", "", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "", "[Processos]", "P | pause/play", "Funciona fora do pause:", "C | Filtrar por cpu%", "M | Filtrar por memoria%", "Funciona em pause:", "< | Pagina Anterior", "> | Proxima Pagina", "<num> | Mata/Termina o processo"])
@@ -65,11 +66,13 @@ class Interface():
         self.livro_processos = Livro("Processos")
         self.livro_processos.adicionar_conteudo(computer_info.get_processes(self.info_processos_filtro))
 
+        self.desligar_dict = {"Screen Lock": "swaylock -i ~/meu_universo/Fotos/Wallpapers/anime_girl.jpg", "Suspender": "systemctl suspend", "Reboot": "systemctl reboot", "Desligar": "systemctl poweroff"}
         self.livro_desligar = Livro("Desligar")
-        self.livro_desligar.adicionar_conteudo(["Screen Lock", "Suspender", "Reboot", "Desligar"])
+        self.livro_desligar.adicionar_conteudo([key for key in self.desligar_dict.keys()])
 
+        self.apps_dict = {"Firefox": "firefox", "Discord": "/usr/bin/discord", "Obsidian": "/usr/bin/obsidian", "Bitwarden": "bitwarden-desktop", "Stremio": "flatpak run com.stremio.Stremio", "Steam": "steam", "Heroic": "heroic", "Ryujinx": "ryujinx", "Pav": "pavucontrol", "Komikku": "prime-run /usr/bin/komikku", "Parsec": "flatpak run com.parsecgaming.parsec", "Xed": "xed", "Psensor": "psensor", "Code": "code-oss", "BleachBit": "bleachbit", "Calendario": "gnome-calendar", "Evolution": "evolution", "EasyEffects": "easyeffects", "Raspberry Pi Imager": "sudo -E rpi-imager", "Firefox + Firejail": "firejail --private firefox", "OBS Studio": "obs", "KolourPaint": "kolourpaint", "KdenLive": "prime-run kdenlive"}
         self.livro_apps = Livro("Apps")
-        self.livro_apps.adicionar_conteudo(["Firefox", "Discord", "Obsidian", "Komikku", "Steam", "Stremio", "Heroic", "Bitwarden", "Pav", "Parsec", "Calendario", "Code", "Xed", "Psensor", "BleachBit", "EasyEffecs", "Evolution", "Raspberry Pi Imager"])
+        self.livro_apps.adicionar_conteudo([key for key in self.apps_dict.keys()])
 
     @property
     def logo(self):
@@ -413,44 +416,12 @@ class Interface():
         elif key == "C":
             if self.info_terminal_conda_env != "":
                 comandos.append("condaon")
-                comandos.append("conda activate " + self.info_terminal_conda_env)
+                if self.info_terminal_conda_env != "base":
+                    comandos.append("conda activate " + self.info_terminal_conda_env)
             if self.info_terminal_programas != "":
-                if self.info_terminal_programas == "NeoVim":
-                    comandos.append("vim .")
-                elif self.info_terminal_programas == "Spotify":
-                    comandos.append("nc")
-                elif self.info_terminal_programas == "Update":
-                    comandos.append("super_update")
-                elif self.info_terminal_programas == "Interface Git":
-                    comandos.append("lg")
-                elif self.info_terminal_programas == "Ver IP":
-                    comandos.append("ip -4 addr show dev wlan0")
-                elif self.info_terminal_programas == "Tree":
-                    comandos.append("tree")
-                elif self.info_terminal_programas == "NewsBoat":
-                    comandos.append("nb")
-                elif self.info_terminal_programas == "Btop":
-                    comandos.append("btop")
-                elif self.info_terminal_programas == "Espaco Livre":
-                    comandos.append("duf")
-                elif self.info_terminal_programas == "TimeShift":
-                    comandos.append("ts")
-                elif self.info_terminal_programas == "Git Status":
-                    comandos.append("of")
-                elif self.info_terminal_programas == "Pokemon":
-                    comandos.append("pk")
-                elif self.info_terminal_programas == "Aquario":
-                    comandos.append("aqua")
-                elif self.info_terminal_programas == "Documentacao":
-                    comandos.append("docs")
-                elif self.info_terminal_programas == "Matrix":
-                    comandos.append("cmatrix")
-                elif self.info_terminal_programas == "TUTUTUTUT":
-                    comandos.append("cava")
-                elif self.info_terminal_programas == "Speed Test":
-                    comandos.append("speedtest-cli --secure")
+               comandos.append(self.programas_dict[self.info_terminal_programas]) 
             if self.info_terminal_animes != "":
-                comandos.append(f"ani {self.info_terminal_animes}")
+                comandos.append(f"ani-cli {self.info_terminal_animes}")
             if self.info_terminal_chts != "" and self.info_terminal_linguagens != "":
                 comandos.append(f"curl cht.sh/{self.info_terminal_linguagens}/{self.info_terminal_chts}")
             terminal_interactions.open_kitty_with_commands(self.info_terminal_projetos, comandos) 
@@ -720,14 +691,7 @@ class Interface():
                     escolha = self.livro_desligar.itens_pagina[num_key]
                     commands = []
 
-                    if escolha == "Reboot":
-                        commands.append("systemctl reboot")
-                    elif escolha == "Desligar":
-                        commands.append("systemctl poweroff")
-                    elif escolha == "Suspender":
-                        commands.append("systemctl suspend")
-                    elif escolha == "Screen Lock":
-                        commands.append("swaylock -i ~/meu_universo/Fotos/Wallpapers/anime_girl.jpg")
+                    commands.append(self.desligar_dict[escolha]) 
                         
                     terminal_interactions.open_kitty_with_commands("~", commands)
             except:
@@ -768,52 +732,16 @@ class Interface():
             try:
                 num_key = int(key) - 1
                 if self.livro_apps.numero_itens > num_key > -1:
-                    escolha = self.livro_apps.itens_pagina[num_key]
-                    commands = ""
+                    escolha = self.apps_dict[self.livro_apps.itens_pagina[num_key]]
 
-                    if escolha == "Firefox":
-                        commands = "/usr/lib/firefox/firefox"
-                    elif escolha == "Discord":
-                        commands = "/usr/bin/discord"
-                    elif escolha == "Komikku":
-                        commands = "/usr/bin/komikku"
-                    elif escolha == "Obsidian":
-                        commands = "/usr/bin/obsidian"
-                    elif escolha == "Bitwarden":
-                        commands = "bitwarden-desktop"
-                    elif escolha == "Stremio":
-                        commands = "flatpak run com.stremio.Stremio"
-                    elif escolha == "Parsec":
-                        commands = "flatpak run com.parsecgaming.parsec"
-                    elif escolha == "Pav":
-                        commands = "pavucontrol"
-                    elif escolha == "Xed":
-                        commands = "xed"
-                    elif escolha == "Psensor":
-                        commands = "psensor"
-                    elif escolha == "Code":
-                        commands = "code-oss"
-                    elif escolha == "BleachBit":
-                        commands = "bleachbit"
-                    elif escolha == "Calendario":
-                        commands = "gnome-calendar"
-                    elif escolha == "Btop":
-                        commands = "btop"
-                    elif escolha == "Evolution":
-                        commands = "evolution"
-                    elif escolha == "EasyEffects":
-                        commands = "easyeffects"
-                    elif escolha == "Raspberry Pi Imager":
-                        commands = "rpi-imager"
-
-                    if escolha == "Steam":
+                    if escolha == "steam":
                         self.info_apps_launcher = "steam"
                         self.painel_atual = self.games
-                    elif escolha == "Heroic":
+                    elif escolha == "heroic":
                         self.info_apps_launcher = "heroic"
                         self.painel_atual = self.games
                     else:
-                        terminal_interactions.launch_app(commands, False)
+                        terminal_interactions.launch_app(escolha, False)
             except:
                 pass
 
