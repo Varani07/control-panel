@@ -23,9 +23,6 @@ class Interface():
         self.info_terminal_projetos = ""
         self.info_terminal_conda_env = ""
         self.info_terminal_programas = ""
-        self.info_terminal_animes = ""
-        self.info_terminal_linguagens = ""
-        self.info_terminal_chts = ""
 
         self.info_apps_games = ""
         self.info_apps_ver_painel = False
@@ -35,7 +32,7 @@ class Interface():
         self.info_processos_filtro = "memoria"
 
         self.livro_projetos = Livro("Projetos")
-        self.livro_projetos.adicionar_conteudo(["control-panel", "magic-survival", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles", "applications"]) 
+        self.livro_projetos.adicionar_conteudo(["control-panel", "game-prototype", "magic-survival", "gerenciamento_usina", "teste_conhecimento_python", "ponto-ecosocial", "hypr", "nvim", "bin", "zsh", "kitty", "repos", "dotfiles", "applications"]) 
 
         self.wallpapers_dict = {"Black Screen": "3162080199", "Maka Albarn": "2235368643", "Hu Tao": "3288556868", "One Piece": "2592186084", "Dangan Train": "2960810177", "Anime Girl": "1548634999", "Grace - orange": "3302288165", "Yamato": "2873476171", "Stardust Sky": "3000931940", "Colorful Girl": "3260370312", "Amadeus": "2842174772", "Anime Girl - white": "3304382950", "Ayanami Rei - night": "3258032485", "Noragami": "2822531788", "Steins Gate": "2857814403", "Saihara Shuichi": "1587283090", "Dangan Trigger": "2018250661", "Nagito": "2859605707", "Makise Kurisu": "3307110665", "Purple Nywz": "3249042667", "Car Seat Headrest": "1927545570", "Albedo": "3413447654", "Albedo - gif": "1440015815", "Gurren Lagan": "899193283", "Luffy & Yamato Cutscene": "2799259243", "Yano Battle Cutscene": "2915598509", "V3 Cutscene": "841038705", "Danganronpa 1 Opening": "844831603", "Danganronpa 2 Opening": "844847126", "Danganronpa 3 Opening": "948561789", "Monokuma": "982768639"}
         self.livro_wallpapers = Livro("Wallpapers")
@@ -45,20 +42,14 @@ class Interface():
         self.livro_ips = Livro("Ips")
 
         self.livro_envs = Livro("Environment")
-        self.livro_envs.adicionar_conteudo(["base", "control_panel_env", "ponto_ecosocial_env", "usina_env"])
+        self.livro_envs.adicionar_conteudo(["base", "control_panel_env", "game_prototype", "5games", "ponto_ecosocial_env", "usina_env"])
 
         self.programas_dict = {"NeoVim": "vim .", "Spotify": "ncspot", "Update": "super_update", "Interface Git": "lazygit", "Python": "python main.py", "Tree": "tree", "Speed Test": "speedtest-cli --secure", "Gerenciar Espaço": "ncdu", "NewsBoat": "newsboat", "Ver IP": "ip -4 addr show dev wlan0", "Btop": "btop", "Espaco Livre": "duf", "TimeShift": "sudo -E timeshift-gtk", "Git Status": "of", "Pokemon": "pk", "Aquario": "asciiquarium", "Docs": "devdocs-desktop", "TUTUTUTUT": "cava", "Nvidia GPU Usage": "watch nvidia-smi"}
         self.livro_programas = Livro("Programas")
         self.livro_programas.adicionar_conteudo([key for key in self.programas_dict.keys()])
 
-        self.livro_animes = Livro("Animes")
-        self.livro_animes.adicionar_conteudo(["One Piece", "Re: Zero", "Tower Of God"])
-
         self.livro_linguagens = Livro("Linguagens")
         self.livro_linguagens.adicionar_conteudo(["python"])
-
-        self.livro_chts = Livro("Cheat Sheets")
-        self.livro_chts.adicionar_conteudo(["for", "append", "list"])
 
         self.livro_help = Livro("Help")
         self.livro_help.adicionar_conteudo(["[Geral]", "r | Conexoes", "p | Processos", "m | Menu Principal", "w | Wallpapers", "t | Terminal", "a | Apps", "i | IP's", "d | Sistema", "q | Sair", "< | Pagina Anterior", "> | Proxima Pagina", "", "[Conexoes]", "C | Conectar Bluetooth", "P | Parear Bluetooth", "R | Remover Bluetooth", "D | Desconectar Bluetooth", "", "[Processos]", "P | pause/play", "Funciona fora do pause:", "C | Filtrar por cpu%", "M | Filtrar por memoria%", "Funciona em pause:", "< | Pagina Anterior", "> | Proxima Pagina", "<num> | Mata/Termina o processo"])
@@ -66,11 +57,11 @@ class Interface():
         self.livro_processos = Livro("Processos")
         self.livro_processos.adicionar_conteudo(computer_info.get_processes(self.info_processos_filtro))
 
-        self.desligar_dict = {"Screen Lock": "swaylock -i ~/meu_universo/Fotos/Wallpapers/anime_girl.jpg", "Suspender": "systemctl suspend", "Reboot": "systemctl reboot", "Desligar": "systemctl poweroff"}
+        self.desligar_dict = {"Screen Lock": "swaylock -i ~/Vault/meu_universo/Fotos/Wallpapers/anime_girl.jpg", "Suspender": "systemctl suspend", "Reboot": "systemctl reboot", "Desligar": "systemctl poweroff"}
         self.livro_desligar = Livro("Desligar")
         self.livro_desligar.adicionar_conteudo([key for key in self.desligar_dict.keys()])
 
-        self.apps_dict = {"Firefox": "firefox", "Discord": "/usr/bin/discord", "Obsidian": "/usr/bin/obsidian", "Bitwarden": "bitwarden-desktop", "Stremio": "flatpak run com.stremio.Stremio", "Steam": "steam", "Heroic": "heroic", "Ryujinx": "ryujinx", "Pav": "pavucontrol", "Komikku": "prime-run /usr/bin/komikku", "Parsec": "flatpak run com.parsecgaming.parsec", "Xed": "xed", "Psensor": "psensor", "Code": "code-oss", "BleachBit": "bleachbit", "Calendario": "gnome-calendar", "Evolution": "evolution", "EasyEffects": "easyeffects", "Raspberry Pi Imager": "sudo -E rpi-imager", "Firefox + Firejail": "firejail --private firefox", "OBS Studio": "obs", "KolourPaint": "kolourpaint", "KdenLive": "prime-run kdenlive"}
+        self.apps_dict = {"Firefox": "firefox", "Discord": "/usr/bin/discord", "Obsidian": "/usr/bin/obsidian", "Bitwarden": "bitwarden-desktop", "Stremio": "flatpak run com.stremio.Stremio", "Steam": "steam", "Heroic": "heroic", "Ryujinx": "ryujinx", "Pav": "pavucontrol", "Komikku": "prime-run /usr/bin/komikku", "Aseprite": "aseprite", "Tiled": "tiled", "Parsec": "flatpak run com.parsecgaming.parsec", "Xed": "xed", "Psensor": "psensor", "Code": "code-oss", "BleachBit": "bleachbit", "Calendario": "gnome-calendar", "Evolution": "evolution", "EasyEffects": "easyeffects", "Raspberry Pi Imager": "sudo -E rpi-imager", "Firefox + Firejail": "firejail --private firefox", "OBS Studio": "obs", "KolourPaint": "kolourpaint", "KdenLive": "prime-run kdenlive", "Lmms": "lmms"}
         self.livro_apps = Livro("Apps")
         self.livro_apps.adicionar_conteudo([key for key in self.apps_dict.keys()])
 
@@ -135,12 +126,6 @@ class Interface():
                         self.comandos_games(key)
                     elif self.nome_painel_atual == "Conexoes: achar bluetooth":
                         self.comandos_achar_bluetooth(key)
-                    elif self.nome_painel_atual == "Terminal: animes":
-                        self.comandos_animes(key)
-                    elif self.nome_painel_atual == "Terminal: linguagens":
-                        self.comandos_linguagens(key)
-                    elif self.nome_painel_atual == "Terminal: chts":
-                        self.comandos_chts(key)
                     elif self.nome_painel_atual == "Ips":
                         self.comandos_ips(key)
                     elif self.nome_painel_atual == "Wallpapers":
@@ -392,13 +377,10 @@ class Interface():
     def info_terminal(self):
         self.pag_mode = False
         self.nome_painel_atual = "Terminal"
-        espacos = "\n" * 1
+        espacos = "\n" * 3
         reset = "[red]Resetar - Shift + D[/]"
         confirm = "[green]Confirmar - Shift + C[/]\n"
-        chts = ""
-        if self.info_terminal_chts != "":
-            chts = f" | {self.info_terminal_chts}"
-        painel_diretorios = Panel(f"""{self.logo}\n1 | Projeto: {self.info_terminal_projetos:.12}\n2 | Conda Env: {self.info_terminal_conda_env:.12}\n3 | Programa: {self.info_terminal_programas:.12}\n4 | Anime: {self.info_terminal_animes:.12}\n5 | Cheat Sheet:\n{self.info_terminal_linguagens:.12}{chts:.12}\n{espacos}{confirm}{reset}""")
+        painel_diretorios = Panel(f"""{self.logo}\n1 | Projeto: {self.info_terminal_projetos:.12}\n2 | Conda Env: {self.info_terminal_conda_env:.12}\n3 | Programa: {self.info_terminal_programas:.12}\n\n{espacos}{confirm}{reset}""")
         return painel_diretorios
 
     def comandos_terminal(self, key):
@@ -409,10 +391,6 @@ class Interface():
             self.painel_atual = self.conda_env
         elif key == "3":
             self.painel_atual = self.programas
-        elif key == "4":
-            self.painel_atual = self.animes
-        elif key == "5":
-            self.painel_atual = self.linguagens
         elif key == "C":
             if self.info_terminal_conda_env != "":
                 comandos.append("condaon")
@@ -420,18 +398,11 @@ class Interface():
                     comandos.append("conda activate " + self.info_terminal_conda_env)
             if self.info_terminal_programas != "":
                comandos.append(self.programas_dict[self.info_terminal_programas]) 
-            if self.info_terminal_animes != "":
-                comandos.append(f"ani-cli {self.info_terminal_animes}")
-            if self.info_terminal_chts != "" and self.info_terminal_linguagens != "":
-                comandos.append(f"curl cht.sh/{self.info_terminal_linguagens}/{self.info_terminal_chts}")
             terminal_interactions.open_kitty_with_commands(self.info_terminal_projetos, comandos) 
         elif key == "D":
             self.info_terminal_projetos = ""
             self.info_terminal_conda_env = ""
             self.info_terminal_programas = ""
-            self.info_terminal_animes = ""
-            self.info_terminal_linguagens = ""
-            self.info_terminal_chts = ""
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -540,118 +511,6 @@ class Interface():
                 num_key = int(key) - 1
                 if self.livro_programas.numero_itens > num_key > -1:
                     self.info_terminal_programas = self.livro_programas.itens_pagina[num_key]
-                    self.painel_atual = self.info_terminal
-            except:
-                pass
-
-# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    def animes(self):
-        self.nome_painel_atual = "Terminal: animes"
-        self.info_terminal_animes = ""
-        animes = []
-        espacos = "\n" * (9 - self.livro_animes.numero_itens)
-        animes = [f"{i} | {anime:.23}\n" for i, anime in enumerate(self.livro_animes.itens_pagina, 1)]
-        animes[-1] = animes[-1].replace("\n", "")
-        animes = "".join(animes)
-        painel = Panel(f"""{self.logo}{str(self.livro_animes.pagina_atual)}/{str(self.livro_animes.numero_de_paginas)}\n{animes}{espacos}""")
-        return painel
-
-    def comandos_animes(self, key):
-        if key == "s":
-            self.pag_mode = not self.pag_mode
-
-        if self.pag_mode:
-            try: 
-                num_key = int(key)
-                self.livro_animes.mudar_pagina(num_key)
-            except:
-                pass
-        else:
-            if key == "<":
-                self.livro_animes.pagina_anterior
-            elif key == ">":
-                self.livro_animes.proxima_pagina
-
-            try:
-                num_key = int(key) - 1
-                if self.livro_animes.numero_itens > num_key > -1:
-                    self.info_terminal_animes = self.livro_animes.itens_pagina[num_key]
-                    self.painel_atual = self.info_terminal
-            except:
-                pass
-
-# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    def linguagens(self):
-        self.nome_painel_atual = "Terminal: linguagens"
-        self.info_terminal_linguagens = ""
-        self.info_terminal_chts = ""
-        linguagens = []
-        espacos = "\n" * (9 - self.livro_linguagens.numero_itens)
-        linguagens = [f"{i} | {linguagem:.23}\n" for i, linguagem in enumerate(self.livro_linguagens.itens_pagina, 1)]
-        linguagens[-1] = linguagens[-1].replace("\n", "")
-        linguagens = "".join(linguagens)
-        painel = Panel(f"""{self.logo}{str(self.livro_linguagens.pagina_atual)}/{str(self.livro_linguagens.numero_de_paginas)}\n{linguagens}{espacos}""")
-        return painel
-
-    def comandos_linguagens(self, key):
-        if key == "s":
-            self.pag_mode = not self.pag_mode
-
-        if self.pag_mode:
-            try:
-                num_key = int(key)
-                self.livro_linguagens.mudar_pagina(num_key)
-            except:
-                pass
-        else:
-            if key == "<":
-                self.livro_linguagens.pagina_anterior
-            elif key == ">":
-                self.livro_linguagens.proxima_pagina
-
-            try:
-                num_key = int(key) - 1
-                if self.livro_linguagens.numero_itens > num_key > -1:
-                    self.info_terminal_linguagens = self.livro_linguagens.itens_pagina[num_key]
-                    self.painel_atual = self.chts
-            except:
-                pass
-
-# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    def chts(self):
-        self.nome_painel_atual = "Terminal: chts"
-        self.info_terminal_chts = ""
-        chts = []
-        espacos = "\n" * (9 - self.livro_chts.numero_itens)
-        chts = [f"{i} | {cht:.23}\n" for i, cht in enumerate(self.livro_chts.itens_pagina, 1)]
-        chts[-1] = chts[-1].replace("\n", "")
-        chts = "".join(chts)
-        painel = Panel(f"""{self.logo}{str(self.livro_chts.pagina_atual)}/{str(self.livro_chts.numero_de_paginas)}\n{chts}{espacos}""")
-        return painel
-
-    def comandos_chts(self, key):
-        if key == "s":
-            self.pag_mode = not self.pag_mode
-
-        if self.pag_mode:
-            try:
-                num_key = int(key)
-                self.livro_chts.mudar_pagina(num_key)
-            except:
-                pass
-        else:
-            if key == "<":
-                self.livro_chts.pagina_anterior
-            elif key == ">":
-                self.livro_chts.proxima_pagina
-
-            try:
-                num_key = int(key) - 1
-                if self.livro_chts.numero_itens > num_key > -1:
-                    self.info_terminal_chts = self.livro_chts.itens_pagina[num_key]
                     self.painel_atual = self.info_terminal
             except:
                 pass
